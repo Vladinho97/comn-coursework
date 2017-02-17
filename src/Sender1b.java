@@ -102,6 +102,7 @@ public class Sender1b {
 				System.out.println("send packet. waiting for ack packet.");
 				ack = false;
 				while (!ack) {
+					System.out.println("imgByte Idx = "+idx);
 					clientSocket.setSoTimeout(retryTimeout);
 					rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
 					System.out.println("============= timer started ===========");
