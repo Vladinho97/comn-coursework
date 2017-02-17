@@ -57,7 +57,6 @@ public class Sender1b {
 			fis.read(imgBytesArr);
 			fis.close();
 			int len = imgBytesArr.length;
-//			System.out.println("imgBytesArr length : "+len);
 			int idx = 0; // index for imgByteArr
 			// to measure time elapse between first and last packet.
 			boolean isFirstPacket = true;
@@ -138,6 +137,7 @@ public class Sender1b {
 					} catch (SocketTimeoutException e) {
 						clientSocket.send(sendPacket);
 						noOfRetransmission++;
+						
 						check++;
 						System.out.println("send packet #: "+check);
 
@@ -149,6 +149,7 @@ public class Sender1b {
 			clientSocket.close();
 			System.out.println("No of retransmission : "+noOfRetransmission);
 			long estimatedTimeInNano = endTime - startTime; 
+			System.out.println("estimated time in sec: "+(estimatedTimeInNano*(10^(-9))));
 			double throughput = fileSizeKB/(-estimatedTimeInNano*(10^(-9)));
 			System.out.println("Throughput : "+throughput);
 		} catch (Exception e) {
