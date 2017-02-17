@@ -80,6 +80,8 @@ public class Receiver1b {
 					}
 				} else {
 					System.out.println("Duplicate packet. send again.");
+					System.out.println("expected : "+expectedSeqNo);
+					System.out.println("received : "+rcvSeqNo);
 				}
 			}
 		} catch (Exception e) {
