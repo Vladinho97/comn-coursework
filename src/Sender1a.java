@@ -26,6 +26,8 @@ public class Sender1a {
 			
 			int incre = 0;
 			int headerInt;
+			int packetIdx;
+			int packetSize;
 			byte endFlag = (byte) 0;
 			
 			File file = new File(filename);
@@ -40,8 +42,8 @@ public class Sender1a {
 			while (idx < len) {
 				headerInt = incre % Integer.MAX_VALUE;
 				incre++;
-				int packetIdx = 3;
-				int packetSize;
+				packetIdx = 3;
+//				int packetSize;
 				byte[] buffer;
 				
 				if ((len-idx) >= 1024) {
@@ -65,12 +67,13 @@ public class Sender1a {
 					packetIdx++;
 					idx++;
 				}
-				packetIdx = 3;
+//				packetIdx = 3;
 				
 				sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 				clientSocket.send(sendPacket);
 				Thread.sleep(10);
 			}
+			clientSocket.close();
 		} catch (Exception e) {
 			System.err.println("Error: " + e.getMessage());
 		}
