@@ -82,14 +82,13 @@ public class Sender1b {
 				buffer[1] = (byte) seqNo;
 				buffer[2] = endFlag; 
 //				System.out.println("imgByteArr idx : "+idx);
-//				System.out.println("SeqNo : "+seqNo);
-//				System.out.println("endFlag : "+endFlag);
+				System.out.println("SeqNo : "+seqNo);
+				System.out.println("endFlag : "+endFlag);
 				while (packetIdx < packetSize) {
 					buffer[packetIdx] = imgBytesArr[idx];
 					packetIdx++;
 					idx++;
 				}
-//				System.out.println("packetIdx : "+packetIdx);
 				packetIdx = 3;
 				
 				sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
@@ -100,20 +99,19 @@ public class Sender1b {
 					startTime = System.nanoTime();
 					isFirstPacket = false;
 				} 
-//				System.out.println("send packet. waiting for ack packet.");
+				System.out.println("send packet. waiting for ack packet.");
 				ack = false;
 				while (!ack) {
 					clientSocket.setSoTimeout(retryTimeout);
 					rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
-//					System.out.println("============= timer started ===========");
+					System.out.println("============= timer started ===========");
 					try {
 						rcvPacket.setLength(2);
-//						rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
 						clientSocket.receive(rcvPacket);
-//						System.out.println("received ack packet");
+						System.out.println("received ack packet");
 						rcvSeqNo = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-//						System.out.println("expected seqNo : "+seqNo);
-//						System.out.println("ack received with rcvSeqNo : "+rcvSeqNo);
+						System.out.println("expected seqNo : "+seqNo);
+						System.out.println("ack received with rcvSeqNo : "+rcvSeqNo);
 						if (rcvSeqNo == seqNo) {
 							ack = true;
 							if (seqNo == 0) {
@@ -121,8 +119,8 @@ public class Sender1b {
 							} else {
 								seqNo = 0;
 							}							
-//							System.out.println("ack received");
-//							System.out.println("seqNo : "+seqNo);
+							System.out.println("ack received");
+							System.out.println("seqNo : "+seqNo);
 							// set endTime
 							if (isLastPacket) {
 								endTime = System.nanoTime();
@@ -131,8 +129,8 @@ public class Sender1b {
 					} catch (SocketTimeoutException e) {
 						clientSocket.send(sendPacket);
 						noOfRetransmission++;
-//						System.out.println("time out occured. clientSocket resent packet.");
-//						System.out.println("seqNo : "+seqNo);
+						System.out.println("time out occured. clientSocket resent packet.");
+						System.out.println("seqNo : "+seqNo);
 					}
 				}				
 			}

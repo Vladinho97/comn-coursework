@@ -31,6 +31,7 @@ public class Receiver1a {
 			OutputStream out = new BufferedOutputStream(new FileOutputStream(filename));
 			
 			while (true) {
+				receivePacket.setLength(1027);
 				serverSocket.receive(receivePacket);
 				packetSize = receivePacket.getLength();
 				// IPAddress = receivePacket.getAddress();

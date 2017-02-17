@@ -32,11 +32,10 @@ public class Receiver1b {
 			
 			int packetSize;
 			OutputStream out = new BufferedOutputStream(new FileOutputStream(filename));
-//			System.out.println("================ Start receiver ==============");
+			System.out.println("================ Start receiver ==============");
 			while (true) {
 				serverSocket.setSoTimeout(0);
 				receivePacket.setLength(1027);
-//				receivePacket = new DatagramPacket(buffer, buffer.length);
 //				System.out.println("packet length : "+receivePacket.getLength());
 				serverSocket.receive(receivePacket);
 				
@@ -58,8 +57,8 @@ public class Receiver1b {
 						currIdx++;
 					}
 					out.write(currentBuffer);
-//					System.out.println("expected sequence no : " + expectedSeqNo);
-//					System.out.println("received sequence no : " + rcvSeqNo);
+					System.out.println("expected sequence no : " + expectedSeqNo);
+					System.out.println("received sequence no : " + rcvSeqNo);
 					// send ack packet
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
 					serverSocket.send(ackPacket);
@@ -69,18 +68,18 @@ public class Receiver1b {
 					} else {
 						expectedSeqNo = 0;
 					}
-//					System.out.println("sent ack packet");
-//					System.out.println("updated expectedSeqNo : " + expectedSeqNo);
-//					System.out.println();
-//					System.out.println();
+					System.out.println("sent ack packet");
+					System.out.println("updated expectedSeqNo : " + expectedSeqNo);
+					System.out.println();
+					System.out.println();
 					if (endFlag == ((byte) 1)) {
 						out.close();
 						serverSocket.close();
-//						System.out.println("Is last packet. Finish");
+						System.out.println("Is last packet. Finish");
 						break;
 					}
 				} else {
-//					System.out.println("Duplicate packet. send again.");
+					System.out.println("Duplicate packet. send again.");
 				}
 			}
 		} catch (Exception e) {
