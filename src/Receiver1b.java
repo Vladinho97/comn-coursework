@@ -83,6 +83,10 @@ public class Receiver1b {
 					}
 				} else {
 					System.out.println("Duplicate packet. send again.");
+					// send ack packet again
+					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
+					serverSocket.send(ackPacket);
+
 					System.out.println("expected : "+expectedSeqNo);
 					System.out.println("received : "+rcvSeqNo);
 				}
