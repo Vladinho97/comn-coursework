@@ -46,6 +46,12 @@ public class Sender1b {
 			double fileSizeBytes = file.length();
 			double fileSizeKB = (fileSizeBytes/1024);
 			
+			
+			
+			int check = 0;
+			
+			
+			
 			byte[] imgBytesArr = new byte[(int) file.length()];
 			FileInputStream fis = new FileInputStream(file);
 			fis.read(imgBytesArr);
@@ -93,6 +99,8 @@ public class Sender1b {
 				
 				sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 				clientSocket.send(sendPacket);
+				check++;
+				System.out.println("send packet #: "+check);
 				
 				// set startTime
 				if (isFirstPacket) {
@@ -130,6 +138,9 @@ public class Sender1b {
 					} catch (SocketTimeoutException e) {
 						clientSocket.send(sendPacket);
 						noOfRetransmission++;
+						check++;
+						System.out.println("send packet #: "+check);
+
 						System.out.println("time out occured. clientSocket resent packet.");
 						System.out.println("seqNo : "+seqNo);
 					}

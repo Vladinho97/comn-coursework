@@ -30,6 +30,8 @@ public class Receiver1b {
 			DatagramPacket ackPacket; 
 			byte[] ackBuffer = new byte[2];
 			
+			int check = 0;
+			
 			int packetSize;
 			OutputStream out = new BufferedOutputStream(new FileOutputStream(filename));
 			System.out.println("================ Start receiver ==============");
@@ -38,7 +40,8 @@ public class Receiver1b {
 				receivePacket.setLength(1027);
 //				System.out.println("packet length : "+receivePacket.getLength());
 				serverSocket.receive(receivePacket);
-				
+				check++;
+				System.out.println("received Packet : #"+check);
 				packetSize = receivePacket.getLength();
 //				System.out.println("packetSize : "+packetSize);
 				IPAddress = receivePacket.getAddress();
