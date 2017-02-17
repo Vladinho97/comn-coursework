@@ -149,7 +149,7 @@ public class Sender1b {
 			clientSocket.close();
 			System.out.println("No of retransmission : "+noOfRetransmission);
 			long estimatedTimeInNano = endTime - startTime; 
-			double estimatedTimeInSec = - (double)estimatedTimeInNano/(10^(-9));
+			double estimatedTimeInSec = - (double)estimatedTimeInNano/1000000000.0;
 			System.out.println("estimated time in sec: "+estimatedTimeInSec);
 			double throughput = fileSizeKB/estimatedTimeInSec;
 			System.out.println("Throughput : "+throughput);
