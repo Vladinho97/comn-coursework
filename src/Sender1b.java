@@ -41,6 +41,7 @@ public class Sender1b {
 			byte[] ackBuffer = new byte[2]; // ACK value aka sequence no. in 2 bytes
 			int rcvSeqNoInt; // sequence no. received from server in integer
 			boolean ack; // flag to indicate that ACK received from server 
+			int attempt; // the number of attempts (resending packet) for the current packet.
 			
 			File file = new File(filename); // open image file
 			double fileSizeKB = (file.length()/1024); // for measuring throughput - file size in kilo-bytes
@@ -95,6 +96,7 @@ public class Sender1b {
 				} 
 				
 				ack = false; // wait for ACK 
+				attempt = 1; // only sent packet once so far 
 				while (!ack) { // loop until ACK with appropriate sequence no has been received
 					clientSocket.setSoTimeout(retryTimeout); // wait for retryTimeout amount of time for the ACK packet to arrive
 					rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length); 
@@ -115,7 +117,11 @@ public class Sender1b {
 								endTime = System.nanoTime(); // set endTime if last packet
 						}
 					} catch (SocketTimeoutException e) { // timed out and have not received ACK, resend packet to server
+						if (attempt >= 50) { // if attempted more than 50 times, assume receiver terminates and last ACK package is lost
+							break; // breaks the while loop
+						}
 						clientSocket.send(sendPacket);
+						attempt++;
 						noOfRetransmission++;
 					}
 				}				
