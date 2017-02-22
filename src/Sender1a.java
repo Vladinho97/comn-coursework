@@ -8,7 +8,7 @@ public class Sender1a {
 
 	public static void main(String[] args) throws Exception {
 		
-		if (args.length != 3) { // ignoring RetryTimeout and WindowSize parameter for just now
+		if (args.length != 3) { // ignoring RetryTimeout and WindowSize parameter, exit code 1 if missing arguments
 			System.err.println("Usage: java Sender1a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
 			System.exit(1);
 		}
@@ -21,53 +21,50 @@ public class Sender1a {
 		
 		try {
 			DatagramSocket clientSocket = new DatagramSocket();
-			InetAddress IPAddress = InetAddress.getByName(localhost);
-			DatagramPacket sendPacket;
+			InetAddress IPAddress = InetAddress.getByName(localhost); // IP address of server
+			DatagramPacket sendPacket; // current packet to be sent 
 			
-			int incre = 0;
-			int headerInt;
-			int packetIdx;
-			int packetSize;
-			byte endFlag = (byte) 0;
+			int incre = 0; // to increment sequence no.
+			int seqNoInt; // sequence no. in integer
+			int packetSize; // current packet size, maximum = 1027
+			int packetIdx; // index pointer for the current packet
+			byte endFlag = (byte) 0; // to indicate the last packetk, set equals to (byte) 1
 			
-			File file = new File(filename);
-			byte[] imgBytesArr = new byte[(int) file.length()];
-			
+			File file = new File(filename); // open file
 			FileInputStream fis = new FileInputStream(file);
+			byte[] imgBytesArr = new byte[(int) file.length()]; // current file in byte array
 			fis.read(imgBytesArr);
 			fis.close();
-			int len = imgBytesArr.length;
 			
-			int idx = 0;
-			while (idx < len) {
-				headerInt = incre % Integer.MAX_VALUE;
-				incre++;
-				packetIdx = 3;
-//				int packetSize;
-				byte[] buffer;
+			int len = imgBytesArr.length; // total no. of bytes 
+			int idx = 0; // index pointer for imgBytesArr
+			while (idx < len) { // while there are bytes left in the image file
+				seqNoInt = incre % Integer.MAX_VALUE;
+				incre++; // increment sequence no.
+				packetIdx = 3; // packet index pointer starts at 3 for image byte values
+				byte[] buffer; // buffer for current packet
 				
-				if ((len-idx) >= 1024) {
+				if ((len-idx) >= 1024) { // maximum size of packet is 1027
 					packetSize = 1027;
 					buffer = new byte[packetSize];
-					if ((len-idx) == 1024) 
+					if ((len-idx) == 1024) // last packet has size 1027
 						buffer[2] = (byte) 1;
-					else 
+					else // not last packet
 						buffer[2] = (byte) 0;
-				} else {
+				} else { // last packet has size less than 1027
 					packetSize = 3+len-idx;
 					buffer = new byte[packetSize];
 					buffer[2] = (byte) 1;
 				}
 				
-				buffer[0] = (byte) (headerInt >>> 8);
-				buffer[1] = (byte) headerInt;
+				buffer[0] = (byte) (seqNoInt >>> 8); // store sequcne no. value as two byte values
+				buffer[1] = (byte) seqNoInt;
 				
-				while (packetIdx < packetSize) {
+				while (packetIdx < packetSize) { // write imgBytesArr byte values into packet
 					buffer[packetIdx] = imgBytesArr[idx];
 					packetIdx++;
 					idx++;
 				}
-//				packetIdx = 3;
 				
 				sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 				clientSocket.send(sendPacket);
@@ -76,6 +73,7 @@ public class Sender1a {
 			clientSocket.close();
 		} catch (Exception e) {
 			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace();
 		}
 	}
 }

@@ -8,7 +8,7 @@ import java.net.SocketTimeoutException;
 public class Sender1b {
 
 	public static void main(String[] args) {
-		if (args.length != 4) { // ignoring WindowSize parameter for just now
+		if (args.length != 4) { // ignoring WindowSize parameter, exit code 1 if missing arguments
 			System.err.println("Usage: java Sender1a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
 			System.exit(1);
 		}
@@ -22,73 +22,69 @@ public class Sender1b {
 		// Program outputs
 		int noOfRetransmission = 0;
 		double throughput;
-		long estimatedTimeInNano;
-		double estimatedTimeInSec;
+		long estimatedTimeInNano; // time in nano seconds
+		double estimatedTimeInSec; // time in seconds
+		// to measure time elapse between first and last packet.
+		boolean isFirstPacket = true;
+		boolean isLastPacket = false;
+		long startTime = System.nanoTime(); // initialise variables, will be updated later
+		long endTime = System.nanoTime();
 
 		try {
 			DatagramSocket clientSocket = new DatagramSocket();
 			InetAddress IPAddress = InetAddress.getByName(localhost);
-			DatagramPacket sendPacket;
+			DatagramPacket sendPacket; // current packet to be sent to server
+			DatagramPacket rcvPacket; // received packet from server
 			
-			// from server : sequence no. and ACK
-			int rcvSeqNo;
-			boolean ack;
-			DatagramPacket rcvPacket;
-			byte[] ackBuffer = new byte[2];
+			byte[] ackBuffer = new byte[2]; // ACK value aka sequence no. in 2 bytes
+			int rcvSeqNoInt; // sequence no. received from server in integer
+			boolean ack; // flag to indicate that ACK received from server 
 			
-			// open image file and convert into a byte array
-			File file = new File(filename);
-			double fileSizeBytes = file.length(); // for measuring throughput - get the size of file in kB
-			double fileSizeKB = (fileSizeBytes/1024);
-			byte[] imgBytesArr = new byte[(int) file.length()]; 
+			File file = new File(filename); // open image file
+			double fileSizeKB = (file.length()/1024); // for measuring throughput - file size in kilo-bytes
+			byte[] imgBytesArr = new byte[(int) file.length()]; // image file in byte array
 			FileInputStream fis = new FileInputStream(file);
-			fis.read(imgBytesArr); // file in byte array
+			fis.read(imgBytesArr);
 			fis.close();
 						
-			// to measure time elapse between first and last packet.
-			boolean isFirstPacket = true;
-			boolean isLastPacket = false;
-			long startTime = System.nanoTime();
-			long endTime = System.nanoTime();
-
 			int len = imgBytesArr.length; // total no. of bytes
 			int idx = 0; // index to increment imgByteArr
-			int seqNo = 0;
-			int bufferIdx; // index to increment current buffer
-			int bufferSize; // max 1027 
+			int seqNoInt = 0; // sequence no. begins with 0
 			byte endFlag = (byte) 0;
+
+			int packetIdx; // index to increment current packet (buffer array)
+			int packetSize; // max 1027 
 			while (idx < len) { // while there are bytes left
-				bufferIdx = 3; 
+				packetIdx = 3; // Index for payload starts with 3
 				byte[] buffer; // current packet
 				
-				if ((len-idx) >= 1024) {
-					bufferSize = 1027;
-					buffer = new byte[bufferSize];
-					if ((len-idx) == 1024) {
+				if ((len-idx) >= 1024) { // maximum size of packet is 1027
+					packetSize = 1027;
+					buffer = new byte[packetSize];
+					if ((len-idx) == 1024) { // is last packet
 						endFlag = (byte) 1;
 						isLastPacket = true;
-					} else { 
+					} else { // not last packet
 						endFlag = (byte) 0;
 					}
 				} else { // last packet
-					bufferSize = 3+len-idx;
-					buffer = new byte[bufferSize];
+					packetSize = 3+len-idx;
+					buffer = new byte[packetSize];
 					endFlag = (byte) 1;
 					isLastPacket = true;
 				}
 				
-				buffer[0] = (byte) (seqNo >>> 8); // sequence no. as bytes in packet
-				buffer[1] = (byte) seqNo;
+				buffer[0] = (byte) (seqNoInt >>> 8); // sequence no. as bytes in packet
+				buffer[1] = (byte) seqNoInt;
 				buffer[2] = endFlag; 
 
-				while (bufferIdx < bufferSize) {
-					buffer[bufferIdx] = imgBytesArr[idx]; // put file byte values into current packet
-					bufferIdx++;
+				while (packetIdx < packetSize) { // 
+					buffer[packetIdx] = imgBytesArr[idx]; // put file byte values into current packet
+					packetIdx++;
 					idx++;
 				}
-				bufferIdx = 3; // reset packet index
 				
-				sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
+				sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo); // send packet to server
 				clientSocket.send(sendPacket);
 				
 				if (isFirstPacket) { // set startTime
@@ -98,25 +94,25 @@ public class Sender1b {
 				
 				ack = false; // wait for ACK 
 				while (!ack) { // loop until ACK with appropriate sequence no has been received
-					clientSocket.setSoTimeout(retryTimeout); // wait for retryTimeout amount of time
+					clientSocket.setSoTimeout(retryTimeout); // wait for retryTimeout amount of time for the ACK packet to arrive
 					rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length); 
 
 					try {
 						rcvPacket.setLength(2);
 						clientSocket.receive(rcvPacket); // receive packet from server
-						rcvSeqNo = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff)); 
+						rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff)); 
 						
-						if (rcvSeqNo == seqNo) { // if received sequence no. matches with expected sequence no.
+						if (rcvSeqNoInt == seqNoInt) { // if received sequence no. matches with expected sequence no.
 							ack = true;
-							if (seqNo == 0)  // update sequence no. for the next packet
-								seqNo = 1;
+							if (seqNoInt == 0)  // update sequence no. for the next packet
+								seqNoInt = 1;
 							else 
-								seqNo = 0;
+								seqNoInt = 0;
 												
 							if (isLastPacket)	
 								endTime = System.nanoTime(); // set endTime if last packet
 						}
-					} catch (SocketTimeoutException e) {
+					} catch (SocketTimeoutException e) { // timed out and have not received ACK, resend packet to server
 						clientSocket.send(sendPacket);
 						noOfRetransmission++;
 					}
@@ -124,6 +120,7 @@ public class Sender1b {
 			}
 			clientSocket.close();
 			
+			// program output
 			System.out.println("================== Part1b: output ==================");
 			System.out.println("No of retransmission = "+noOfRetransmission);
 			estimatedTimeInNano = endTime - startTime; 

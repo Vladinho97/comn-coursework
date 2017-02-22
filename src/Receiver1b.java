@@ -9,7 +9,7 @@ public class Receiver1b {
 
 	public static void main(String[] args) {
 		
-		if (args.length != 2) { // ignoring WindowSize parameter for just now 
+		if (args.length != 2) { // ignoring WindowSize parameter, exit code 1 if missing arguments
 			System.err.println("Usage: Receiver1a <Port> <Filename> [WindowSize]");
 			System.exit(1);
 		}
@@ -18,49 +18,45 @@ public class Receiver1b {
 //		 int windowSize = Integer.parseInt(args[2]);
 				
 		try {			
-			byte[] buffer = new byte[1027]; // 3 bytes header and 1024 bytes payload
+			byte[] buffer = new byte[1027]; // received packet buffer: 3 bytes header and 1024 bytes payload
 			byte endFlag; // endFlag = 1 for last packet, 0 otherwise
 			DatagramSocket serverSocket = new DatagramSocket(portNo);
 			DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
 			InetAddress IPAddress; // IP address from received packet
 			
-			DatagramPacket ackPacket; // ACK packet to be received from client
+			int packetSize; // current received packet size 
+			OutputStream out = new BufferedOutputStream(new FileOutputStream(filename)); // write image to file
+			
+			DatagramPacket ackPacket; // ACK packet to be sent to client
 			byte[] ackBuffer = new byte[2]; // 2 byte for ACK 
 			int rcvSeqNo; // sequence number received from client
-			int expectedSeqNo = 0; // expected value of received sequence number
-			
-			int packetSize; // to keep track of current packet size 
-			OutputStream out = new BufferedOutputStream(new FileOutputStream(filename)); // write image to file
+			int expectedSeqNo = 0; // expected value of received sequence number, begins with 0
 			
 			while (true) {
 				receivePacket.setLength(1027);
-				serverSocket.setSoTimeout(0); 
+				serverSocket.setSoTimeout(0); // do nothing until a packet is received
 
 				serverSocket.receive(receivePacket); // receive packet from client
-				packetSize = receivePacket.getLength();
+				packetSize = receivePacket.getLength(); // obtain information of client
 				IPAddress = receivePacket.getAddress();
 				portNo = receivePacket.getPort();
 				
-				// extract sequence number and end flag information
-				// ackBuffer contains the value of the received sequence number
-				rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff));
-				ackBuffer[0] = buffer[0];
+				rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
+				ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 				ackBuffer[1] = buffer[1];
-				endFlag = buffer[2];
+				endFlag = buffer[2]; // received packet's end flag
 				
-				if (rcvSeqNo == expectedSeqNo) { 
-					// write bytes into file
-					byte[] currentBuffer = new byte[packetSize-3];
-					int currIdx = 0;
-					for (int i = 3; i < packetSize; i++) {
-						currentBuffer[currIdx] = buffer[i];
+				if (rcvSeqNo == expectedSeqNo) { // received packet is the right packet
+					byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
+					int currIdx = 0; // index pointer for currBuff
+					for (int i = 3; i < packetSize; i++) { // write received packet's byte values into currBuff
+						currBuff[currIdx] = buffer[i];
 						currIdx++;
 					}
-					out.write(currentBuffer); 
+					out.write(currBuff); // write into file
 					
-					// send ACK to client
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
-					serverSocket.send(ackPacket);
+					serverSocket.send(ackPacket); // send ACK to client
 					
 					if (expectedSeqNo == 0) // update expected value of received sequence number
 						expectedSeqNo = 1;

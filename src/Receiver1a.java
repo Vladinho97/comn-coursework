@@ -8,7 +8,7 @@ public class Receiver1a {
 	
 	public static void main(String[] args) throws Exception {
 		
-		if (args.length != 2) { // ignoring WindowSize parameter for just now 
+		if (args.length != 2) { // ignoring WindowSize parameter, exit code 1 if missing arguments
 			System.err.println("Usage: Receiver1a <Port> <Filename> [WindowSize]");
 			System.exit(1);
 		}
@@ -18,48 +18,48 @@ public class Receiver1a {
 		// int windowSize = Integer.parseInt(args[2]);
 		
 		try {
-			int lastHeaderInt = -1;
-			int headerInt;
-			int checkSequence;
-			byte endFlag;
+			int seqNoInt; // current sequence no. in integer
+			int lastSeqNoInt = -1; // last known sequence no. in integer, constantly updated as the value of seqNoInt
+			int checkSeq; // (= seqNoInt - lastSeqNoInt) to check for missing sequence no.
 			
-			byte[] buffer = new byte[1027];
+			byte[] buffer = new byte[1027]; // received packet buffer: 3 bytes header and 1024 bytes payload
+			byte endFlag; // endFlag = 1 for last packet, 0 otherwise
 			DatagramSocket serverSocket = new DatagramSocket(portNo);
 			DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
 			
-			int packetSize;
-			OutputStream out = new BufferedOutputStream(new FileOutputStream(filename));
+			OutputStream out = new BufferedOutputStream(new FileOutputStream(filename)); // write image into file
 			
+			int packetSize; // variable to store current received packet size
 			while (true) {
 				receivePacket.setLength(1027);
 				serverSocket.receive(receivePacket);
 				packetSize = receivePacket.getLength();
 				// IPAddress = receivePacket.getAddress();
 				
-				headerInt = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff));
-				endFlag = buffer[2];
+				seqNoInt = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // obtain sequence no.
+				endFlag = buffer[2]; // obtain end flag value
 				
-				checkSequence = headerInt - lastHeaderInt;
-				lastHeaderInt = headerInt;
-				if (checkSequence != 1) {
-					byte[] currentBuffer = new byte[1024];
-					for (int i = 0; i < checkSequence; i++) {
-						for (int j = 0; j < 1024; j++) {
-							currentBuffer[j] = (byte) 10;
+				checkSeq = seqNoInt - lastSeqNoInt; // == 1 if no missing packets
+				lastSeqNoInt = seqNoInt; // update as current packet's sequence no.
+				if (checkSeq != 1) { // missing packets
+					byte[] missingBytesArr = new byte[1024]; // each missing packet has 1024 bytes
+					for (int i = 0; i < (checkSeq-1); i++) { // for each missing packet (1024 missing bytes), refill byte values
+						for (int j = 0; j < 1024; j++) { 
+							missingBytesArr[j] = (byte) 10; 
 						}
+						out.write(missingBytesArr); 
 					}
-					out.write(currentBuffer);
-				} else {
-					byte[] currentBuffer = new byte[packetSize-3];
-					int currIdx = 0;
-					for (int i = 3; i < packetSize; i++) {
-						currentBuffer[currIdx] = buffer[i];
-						currIdx++;
-					}
-					out.write(currentBuffer);
-				}
+				} // finish refilling missing bytes
 				
-				if (endFlag == ((byte) 1)) {
+				byte[] currBuff = new byte[packetSize-3]; // array to hold image file bytes
+				int currIdx = 0; // currBuff index pointer
+				for (int i = 3; i < packetSize; i++) {
+					currBuff[currIdx] = buffer[i];
+					currIdx++;
+				}
+				out.write(currBuff); // write image file byte values from current packet to file
+				
+				if (endFlag == ((byte) 1)) { // terminates program if it is the last packet
 					out.close();
 					serverSocket.close();
 					break;
@@ -67,6 +67,7 @@ public class Receiver1a {
 			}
 		} catch (Exception e) {
 			System.err.println("Error: "+e.getMessage());
+			e.printStackTrace();
 		}
 	}
 }
