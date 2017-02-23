@@ -77,10 +77,6 @@ public class Sender1b {
 					isLastPacket = true;
 				}
 				
-				//////////////// LOGGING ///////////////
-				if (isLastPacket) 	System.out.println("I am the last packet.");
-				//////////////// LOGGING ///////////////
-				
 				buffer[0] = (byte) (seqNoInt >>> 8); // sequence no. as bytes in packet
 				buffer[1] = (byte) seqNoInt;
 				buffer[2] = endFlag; 
@@ -121,13 +117,13 @@ public class Sender1b {
 						
 					} catch (SocketTimeoutException e) { // timed out and have not received ACK, resend packet to server
 						if (isLastPacket && (attempt >= 50)) { // if attempted more than 50 times, assume receiver terminates and last ACK package is lost
-							System.out.println("last packet sent more than 50 times. terminate!");
+//							System.out.println("last packet sent more than 50 times. terminate!");
 							endTime = System.nanoTime(); // records end time
 							break; // breaks the while loops
 						}
 						clientSocket.send(sendPacket);
 						if (isLastPacket)	attempt++; // only counts the last packet in the case that the last ACK package is lost
-						if (isLastPacket)	System.out.println("Resend last packet attempt : "+attempt);
+//						if (isLastPacket)	System.out.println("Resend last packet attempt : "+attempt);
 						noOfRetransmission++;
 					}
 				}				
@@ -139,9 +135,7 @@ public class Sender1b {
 			System.out.println("No of retransmission = "+noOfRetransmission);
 			estimatedTimeInNano = endTime - startTime; 
 			estimatedTimeInSec = (double)estimatedTimeInNano/1000000000.0; // convert from nano-sec to sec
-			/////////////// LOGGING ////////////////
-			System.out.println("Estimated time in sec: "+estimatedTimeInSec);
-			/////////////// LOGGING ////////////////
+//			System.out.println("Estimated time in sec: "+estimatedTimeInSec);
 			throughput = fileSizeKB/estimatedTimeInSec;
 			System.out.println("Throughput = "+throughput);
 			System.out.println("================== Program terminates ==================");

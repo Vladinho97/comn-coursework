@@ -46,7 +46,6 @@ public class Receiver1b {
 				rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
 				ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 				ackBuffer[1] = buffer[1];
-//				endFlag = buffer[2]; // received packet's end flag
 				
 				if (rcvSeqNo == expectedSeqNo) { // received packet is the right packet
 					byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
@@ -58,12 +57,7 @@ public class Receiver1b {
 					out.write(currBuff); // write into file
 					
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
-					///////////// for testing last packet /////////////////
-					if (buffer[2] == ((byte) 1)) {
-						// do nothing. dont send. 
-					} else {
-						serverSocket.send(ackPacket); // send ACK to client
-					}
+					serverSocket.send(ackPacket); // send ACK to client
 					
 					if (expectedSeqNo == 0) // update expected value of received sequence number
 						expectedSeqNo = 1;
