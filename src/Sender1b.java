@@ -29,8 +29,8 @@ public class Sender1b {
 		// to measure time elapse between first and last packet.
 		boolean isFirstPacket = true;
 		boolean isLastPacket = false;
-		long startTime = System.nanoTime(); // initialise variables, will be updated later
-		long endTime = System.nanoTime();
+		Long startTime = null; // start and end time
+		Long endTime = null;
 
 		try {
 			DatagramSocket clientSocket = new DatagramSocket();
@@ -96,7 +96,7 @@ public class Sender1b {
 				} 
 				
 				ack = false; // wait for ACK 
-				attempt = 1; // only sent packet once so far 
+				attempt = 1; // only sent packet once so far, this variable is associated with the last package
 				while (!ack) { // loop until ACK with appropriate sequence no has been received
 					clientSocket.setSoTimeout(retryTimeout); // wait for retryTimeout amount of time for the ACK packet to arrive
 					rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length); 
@@ -108,20 +108,20 @@ public class Sender1b {
 						
 						if (rcvSeqNoInt == seqNoInt) { // if received sequence no. matches with expected sequence no.
 							ack = true;
-							if (seqNoInt == 0)  // update sequence no. for the next packet
-								seqNoInt = 1;
-							else 
-								seqNoInt = 0;
+							
+							if (seqNoInt == 0)	seqNoInt = 1;	// update sequence no. for the next packet
+							else	seqNoInt = 0;
 												
-							if (isLastPacket)	
-								endTime = System.nanoTime(); // set endTime if last packet
+							if (isLastPacket)	endTime = System.nanoTime(); // set endTime if last packet
 						}
+						
 					} catch (SocketTimeoutException e) { // timed out and have not received ACK, resend packet to server
-						if (attempt >= 50) { // if attempted more than 50 times, assume receiver terminates and last ACK package is lost
-							break; // breaks the while loop
+						if (isLastPacket && (attempt >= 50)) { // if attempted more than 50 times, assume receiver terminates and last ACK package is lost
+							endTime = System.nanoTime(); // records end time
+							break; // breaks the while loops
 						}
 						clientSocket.send(sendPacket);
-						attempt++;
+						if (isLastPacket)	attempt++; // only counts the last packet in the case that the last ACK package is lost
 						noOfRetransmission++;
 					}
 				}				
@@ -133,7 +133,7 @@ public class Sender1b {
 			System.out.println("No of retransmission = "+noOfRetransmission);
 			estimatedTimeInNano = endTime - startTime; 
 			estimatedTimeInSec = (double)estimatedTimeInNano/1000000000.0; // convert from nano-sec to sec
-//			System.out.println("Estimated time in sec: "+estimatedTimeInSec);
+			System.out.println("Estimated time in sec: "+estimatedTimeInSec);
 			throughput = fileSizeKB/estimatedTimeInSec;
 			System.out.println("Throughput = "+throughput);
 			System.out.println("================== Program terminates ==================");

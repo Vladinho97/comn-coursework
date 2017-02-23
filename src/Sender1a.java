@@ -30,7 +30,7 @@ public class Sender1a {
 			int seqNoInt; // sequence no. in integer
 			int packetSize; // current packet size, maximum = 1027
 			int packetIdx; // index pointer for the current packet
-			byte endFlag = (byte) 0; // to indicate the last packetk, set equals to (byte) 1
+//			byte endFlag = (byte) 0; // to indicate the last packetk, set equals to (byte) 1
 			
 			File file = new File(filename); // open file
 			FileInputStream fis = new FileInputStream(file);

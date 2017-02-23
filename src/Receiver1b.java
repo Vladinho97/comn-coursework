@@ -21,7 +21,7 @@ public class Receiver1b {
 				
 		try {			
 			byte[] buffer = new byte[1027]; // received packet buffer: 3 bytes header and 1024 bytes payload
-			byte endFlag; // endFlag = 1 for last packet, 0 otherwise
+//			byte endFlag; // endFlag = 1 for last packet, 0 otherwise
 			DatagramSocket serverSocket = new DatagramSocket(portNo);
 			DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
 			InetAddress IPAddress; // IP address from received packet
@@ -46,7 +46,7 @@ public class Receiver1b {
 				rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
 				ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 				ackBuffer[1] = buffer[1];
-				endFlag = buffer[2]; // received packet's end flag
+//				endFlag = buffer[2]; // received packet's end flag
 				
 				if (rcvSeqNo == expectedSeqNo) { // received packet is the right packet
 					byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
@@ -65,7 +65,7 @@ public class Receiver1b {
 					else
 						expectedSeqNo = 0;
 
-					if (endFlag == ((byte) 1)) { // terminates if last packet
+					if (buffer[2] == ((byte) 1)) { // terminates if last packet
 						out.close();
 						serverSocket.close();
 						break;
