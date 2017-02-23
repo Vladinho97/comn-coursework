@@ -139,7 +139,9 @@ public class Sender1b {
 			System.out.println("No of retransmission = "+noOfRetransmission);
 			estimatedTimeInNano = endTime - startTime; 
 			estimatedTimeInSec = (double)estimatedTimeInNano/1000000000.0; // convert from nano-sec to sec
+			/////////////// LOGGING ////////////////
 			System.out.println("Estimated time in sec: "+estimatedTimeInSec);
+			/////////////// LOGGING ////////////////
 			throughput = fileSizeKB/estimatedTimeInSec;
 			System.out.println("Throughput = "+throughput);
 			System.out.println("================== Program terminates ==================");

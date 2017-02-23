@@ -58,7 +58,12 @@ public class Receiver1b {
 					out.write(currBuff); // write into file
 					
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
-					serverSocket.send(ackPacket); // send ACK to client
+					///////////// for testing last packet /////////////////
+					if (buffer[2] == ((byte) 1)) {
+						// do nothing. dont send. 
+					} else {
+						serverSocket.send(ackPacket); // send ACK to client
+					}
 					
 					if (expectedSeqNo == 0) // update expected value of received sequence number
 						expectedSeqNo = 1;
