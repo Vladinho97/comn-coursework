@@ -111,10 +111,11 @@ public class Sender1b {
 				} 
 				
 				System.out.println("=========== waiting for ACK packet for packet no. "+packetSent+" ============");
+
 				ack = false; // wait for ACK 
 				attempt = 1; // only sent packet once so far, this variable is associated with the last package
+				clientSocket.setSoTimeout(retryTimeout); // wait for retryTimeout amount of time for the ACK packet to arrive
 				while (!ack) { // loop until ACK with appropriate sequence no has been received
-					clientSocket.setSoTimeout(retryTimeout); // wait for retryTimeout amount of time for the ACK packet to arrive
 					rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length); 
 
 					try {
@@ -144,10 +145,12 @@ public class Sender1b {
 							break; // breaks the while loops
 						}
 						clientSocket.send(sendPacket);
+						clientSocket.setSoTimeout(retryTimeout);
 						if (endFlag == ((byte) 1))	attempt++; // only counts the last packet in the case that the last ACK package is lost
 //						if (isLastPacket)	attempt++; // only counts the last packet in the case that the last ACK package is lost
 //						if (isLastPacket)	System.out.println("Resend last packet attempt : "+attempt);
 						noOfRetransmission++;
+						
 						System.out.println("============ Time out occurred: Resent packet no. "+packetSent+" ============");
 						System.out.println("Retransimission = "+noOfRetransmission);
 					}
