@@ -60,7 +60,7 @@ public class Sender1b {
 			int seqNoInt = 0; // sequence no. begins with 0
 			byte endFlag = (byte) 0;
 
-			int packetSent = 0; // TODO: remove this!!!!!!!!!!!
+//			int packetSent = 0; // TODO: remove this!!!!!!!!!!!
 			
 			int packetIdx; // index to increment current packet (buffer array)
 			int packetSize; // max 1027 
@@ -97,7 +97,7 @@ public class Sender1b {
 				sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo); // send packet to server
 				clientSocket.send(sendPacket);
 				
-				packetSent++; // TODO: remove this!!!!!!!!!!!!!
+//				packetSent++; // TODO: remove this!!!!!!!!!!!!!
 //				System.out.println("====================== Sent packet no. "+packetSent+" ======================");
 //				System.out.println("seqNoInt = "+seqNoInt);
 //				System.out.println("buffer[0] = "+buffer[0]);
