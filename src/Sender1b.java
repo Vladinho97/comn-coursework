@@ -47,7 +47,7 @@ public class Sender1b {
 			
 			// open image file
 			File file = new File(filename); // open image file
-			double fileSizeKB = ((double)file.length())/1000; // for measuring throughput - file size in kilo-bytes
+			double fileSizeKB = ((double)file.length())/1024; // for measuring throughput - file size in kilo-bytes
 			byte[] imgBytesArr = new byte[(int) file.length()]; // image file in byte array
 			FileInputStream fis = new FileInputStream(file);
 			fis.read(imgBytesArr);
