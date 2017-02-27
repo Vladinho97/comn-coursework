@@ -31,6 +31,9 @@ public class Receiver1a {
 			
 			OutputStream out = new BufferedOutputStream(new FileOutputStream(filename)); // write image into file
 			
+			int packetReceived = 0; // TODO: remove this one. this is for checking
+			int byteWritten = 0; // TODO: remove this one. this is for checking
+			
 			int packetSize; // variable to store current received packet size
 			while (true) {
 				receivePacket.setLength(1027);
@@ -38,8 +41,14 @@ public class Receiver1a {
 				packetSize = receivePacket.getLength();
 				// IPAddress = receivePacket.getAddress();
 				
+				packetReceived++;
+				System.out.println("======================= Received packet no. "+packetReceived+" ======================");
+				
 				seqNoInt = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // obtain sequence no.
 				endFlag = buffer[2]; // obtain end flag value
+				
+				System.out.println("seqNoInt = "+seqNoInt);
+				System.out.println("endFlag = "+endFlag);
 				
 				checkSeq = seqNoInt - lastSeqNoInt; // == 1 if no missing packets
 				lastSeqNoInt = seqNoInt; // update as current packet's sequence no.
@@ -48,6 +57,7 @@ public class Receiver1a {
 					for (int i = 0; i < (checkSeq-1); i++) { // for each missing packet (1024 missing bytes), refill byte values
 						for (int j = 0; j < 1024; j++) { 
 							missingBytesArr[j] = (byte) 10; 
+							byteWritten++; // TODO: remove this!!!!!!!!!!
 						}
 						out.write(missingBytesArr); 
 					}
@@ -58,8 +68,11 @@ public class Receiver1a {
 				for (int i = 3; i < packetSize; i++) {
 					currBuff[currIdx] = buffer[i];
 					currIdx++;
+					byteWritten++; // TODO: remove this!!!!!!!!!
 				}
 				out.write(currBuff); // write image file byte values from current packet to file
+				
+				System.out.println("No of bytes written = "+byteWritten);
 				
 				if (endFlag == ((byte) 1)) { // terminates program if it is the last packet
 					out.close();

@@ -34,6 +34,9 @@ public class Receiver1b {
 			int rcvSeqNo; // sequence number received from client
 			int expectedSeqNo = 0; // expected value of received sequence number, begins with 0
 			
+			int packetReceived = 0; // TODO: remove this!!!! 
+			int byteWritten = 0; // TODO: remove this!!!!
+			
 			while (true) {
 				receivePacket.setLength(1027);
 				serverSocket.setSoTimeout(0); // do nothing until a packet is received
@@ -47,23 +50,32 @@ public class Receiver1b {
 				ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 				ackBuffer[1] = buffer[1];
 				
+				packetReceived++;
+				System.out.println("============== Received Packet no. "+packetReceived+" =============");
+				System.out.println("rcvSeqNo = "+rcvSeqNo);
+				
 				if (rcvSeqNo == expectedSeqNo) { // received packet is the right packet
 					byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
 					int currIdx = 0; // index pointer for currBuff
 					for (int i = 3; i < packetSize; i++) { // write received packet's byte values into currBuff
 						currBuff[currIdx] = buffer[i];
 						currIdx++;
+						byteWritten++; // TODO remove this!!! 
 					}
 					out.write(currBuff); // write into file
 					
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
 					serverSocket.send(ackPacket); // send ACK to client
 					
+					System.out.println("======== sent ackPacket for packet no. "+packetReceived+" ======");
 					if (expectedSeqNo == 0) // update expected value of received sequence number
 						expectedSeqNo = 1;
 					else
 						expectedSeqNo = 0;
-
+					
+					System.out.println("updated expected SeqNo = "+ expectedSeqNo);
+					System.out.println("no of bytes written = "+byteWritten);
+					
 					if (buffer[2] == ((byte) 1)) { // terminates if last packet
 						out.close();
 						serverSocket.close();
@@ -72,6 +84,9 @@ public class Receiver1b {
 				} else { // ACK packet lost
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
 					serverSocket.send(ackPacket); // resend ACK packet
+
+					packetReceived--;
+					System.out.println("==== Duplicate packet. Resent ackPacket for packet no. "+packetReceived+" ====");
 				}
 			}
 		} catch (Exception e) {

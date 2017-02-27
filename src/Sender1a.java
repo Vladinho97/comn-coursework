@@ -37,6 +37,8 @@ public class Sender1a {
 			fis.read(imgBytesArr);
 			fis.close();
 			
+			System.out.println("File opened: imgBytesArr has length = "+imgBytesArr.length);
+			
 			int len = imgBytesArr.length; // total no. of bytes 
 			int idx = 0; // index pointer for imgBytesArr
 			while (idx < len) { // while there are bytes left in the image file
@@ -45,21 +47,30 @@ public class Sender1a {
 				packetIdx = 3; // packet index pointer starts at 3 for image byte values
 				byte[] buffer; // buffer for current packet
 				
-				if ((len-idx) >= 1024) { // maximum size of packet is 1027
-					packetSize = 1027;
+				System.out.println("====================== Sending packet no. "+incre+" ====================");
+				System.out.println("Current seqNoInt = "+seqNoInt);
+				
+				if ((len-idx) >= 1024) {
+					packetSize = 1027; // maximum size of packet is 1027
 					buffer = new byte[packetSize];
-					if ((len-idx) == 1024) // last packet has size 1027
-						buffer[2] = (byte) 1;
-					else // not last packet
-						buffer[2] = (byte) 0;
-				} else { // last packet has size less than 1027
-					packetSize = 3+len-idx;
+					if ((len-idx) == 1024)
+						buffer[2] = (byte) 1; // last packet has size 1027
+					else 
+						buffer[2] = (byte) 0; // not last packet
+				} else { 
+					packetSize = 3+len-idx; // last packet has size less than 1027
 					buffer = new byte[packetSize];
 					buffer[2] = (byte) 1;
 				}
 				
-				buffer[0] = (byte) (seqNoInt >>> 8); // store sequcne no. value as two byte values
+				System.out.println("Current packetSize = "+packetSize);
+				
+				buffer[0] = (byte) (seqNoInt >>> 8); // store sequence no. value as two byte values
 				buffer[1] = (byte) seqNoInt;
+				
+				System.out.println("buffer[0] : "+buffer[0]);
+				System.out.println("buffer[1] : "+buffer[1]);
+				System.out.println("buffer[2] : "+buffer[2]);
 				
 				while (packetIdx < packetSize) { // write imgBytesArr byte values into packet
 					buffer[packetIdx] = imgBytesArr[idx];
