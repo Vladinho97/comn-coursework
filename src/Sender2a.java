@@ -15,10 +15,13 @@ public class Sender2a {
 	static String localhost, filename;
 	static int portNo, retryTimeout, windowSize;
 	
-	/** Read arguments and set static class variables' values
+	/** Read arguments and initialise class variables; opens image file and creates an image bytes array
 	 * @param args
+	 * @return imgBytesArr
+	 * @throws IOException
 	 */
-	public static void readArgs(String[] args) {
+	public static byte[] initialiseVars(String[] args) throws IOException {
+		// ================ Read arguments ===============
 		if (args.length != 5) { // ignoring WindowSize parameter, exit code 1 if missing arguments
 			System.err.println("Usage: java Sender1a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
 			System.exit(1);
@@ -28,15 +31,7 @@ public class Sender2a {
 		filename = args[2];
 		retryTimeout = Integer.parseInt(args[3]);
 		windowSize = Integer.parseInt(args[4]);
-	}
-	
-	/** Opens an image file
-	 * @param	filename
-	 * @return	an image byte array
-	 * @throws IOException 
-	 */
-	public static byte[] createImgBytesArr(String filename) throws IOException {
-		// ============== Open file image ==============
+		// ================ Open image file ===============
 		File file = new File(filename);
 		FileInputStream fis = new FileInputStream(file);
 		byte[] imgBytesArr = new byte[(int) file.length()]; // current file in byte array
@@ -45,21 +40,41 @@ public class Sender2a {
 		return imgBytesArr;
 	}
 	
-	public static void main(String[] args) {
-//		if (args.length != 5) { // ignoring WindowSize parameter, exit code 1 if missing arguments
-//			System.err.println("Usage: java Sender1a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
-//			System.exit(1);
-//		}
-//		
-//		// ============== input arguments ==============
-//		String localhost = args[0];
-//		int portNo = Integer.parseInt(args[1]);
-//		String filename = args[2];
-//		int retryTimeout = Integer.parseInt(args[3]);
-//		int windowSize = Integer.parseInt(args[4]);
+	/** TimerTask to resend all packets in the packetsBuffer */
+	static class ResendTask extends TimerTask {
+		int nextseqnum, base;
+		DatagramSocket clientSocket;
+		DatagramPacket[] packetsBuffer;
 		
-		readArgs(args);
-		Timer timer = new Timer();
+		public ResendTask(int nextseqnum, int base, DatagramSocket clientSocket, DatagramPacket[] packetsBuffer) {
+			this.nextseqnum = nextseqnum;
+			this.base = base;
+			this.clientSocket = clientSocket;
+			this.packetsBuffer = packetsBuffer;
+		}
+		
+		public void run() {
+			for (int i = 0; i < (nextseqnum-base); i++) {
+				try {
+					clientSocket.send(packetsBuffer[i]);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	public static Timer scheduleTimer(Timer timer, int nextseqnum, int base, DatagramSocket clientSocket, DatagramPacket[] packetsBuffer) {
+		ResendTask resendTask = new ResendTask(nextseqnum, base, clientSocket, packetsBuffer);
+		timer.schedule(resendTask, (long) retryTimeout);
+		System.out.println("Schedule timer!");
+		return timer;
+	}
+	
+	public static void main(String[] args) throws IOException {
+		byte[] imgBytesArr = initialiseVars(args); // read arguments and set variable values
+		Timer timer = new Timer(); // Time object
 
 		try {
 			DatagramSocket clientSocket = new DatagramSocket();
@@ -67,47 +82,14 @@ public class Sender2a {
 			DatagramPacket sendPacket; // current packet to be sent 
 			DatagramPacket rcvPacket; // received packet from server
 			byte[] ackBuffer = new byte[2]; // ACK value is the sequence no.
-			int rcvSeqNoInt;
-			
+			int rcvSeqNoInt; // received sequence no. in integer
+
 			// ============== Sequence number related variables ==============
 			int incre = 0; // to increment sequence no.
 			int seqNoInt; // sequence no. in integer
 			int base = 0; // oldest unack'd packet starts with sequence no = 0 
 			int nextseqnum = 0; // smallest unused sequence no initially is 1 
 			DatagramPacket[] sentPackets = new DatagramPacket[windowSize]; 
-			
-			class ResendTask extends TimerTask {
-				private int nextseqnum, base;
-				private DatagramSocket clientSocket;
-				private DatagramPacket[] sentPackets;
-				public ResendTask(int nextseqnum, int base, DatagramSocket clientSocket, DatagramPacket[] sentPackets) {
-					this.nextseqnum = nextseqnum;
-					this.base = base;
-					this.clientSocket = clientSocket;
-					this.sentPackets = sentPackets;
-				}
-				public void run() {
-					for (int i = 0; i < (nextseqnum-base); i++) {
-						try {
-							clientSocket.send(sentPackets[i]);
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-				}
-			}		
-			
-//			// ============== Open file image ==============
-//			File file = new File(filename);
-//			FileInputStream fis = new FileInputStream(file);
-//			byte[] imgBytesArr = new byte[(int) file.length()]; // current file in byte array
-//			fis.read(imgBytesArr);
-//			fis.close();
-			
-			// ============== Open file image ==============
-			byte[] imgBytesArr = createImgBytesArr(filename);
-			
 			// ============== imgBytesArr and packet idx pointers ==============
 			int imgBytesArrLen = imgBytesArr.length; // total no. of bytes
 			int imgBytesArrIdx = 0; // index pointer for imgBytesArr
