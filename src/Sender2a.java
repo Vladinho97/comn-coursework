@@ -12,20 +12,53 @@ import java.util.TimerTask;
 
 public class Sender2a {
 	
-	public static void main(String[] args) throws IOException {
+	static String localhost, filename;
+	static int portNo, retryTimeout, windowSize;
+	
+	/** Read arguments and set static class variables' values
+	 * @param args
+	 */
+	public static void readArgs(String[] args) {
 		if (args.length != 5) { // ignoring WindowSize parameter, exit code 1 if missing arguments
 			System.err.println("Usage: java Sender1a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
 			System.exit(1);
 		}
+		localhost = args[0];
+		portNo = Integer.parseInt(args[1]);
+		filename = args[2];
+		retryTimeout = Integer.parseInt(args[3]);
+		windowSize = Integer.parseInt(args[4]);
+	}
+	
+	/** Opens an image file
+	 * @param	filename
+	 * @return	an image byte array
+	 * @throws IOException 
+	 */
+	public static byte[] createImgBytesArr(String filename) throws IOException {
+		// ============== Open file image ==============
+		File file = new File(filename);
+		FileInputStream fis = new FileInputStream(file);
+		byte[] imgBytesArr = new byte[(int) file.length()]; // current file in byte array
+		fis.read(imgBytesArr);
+		fis.close();
+		return imgBytesArr;
+	}
+	
+	public static void main(String[] args) {
+//		if (args.length != 5) { // ignoring WindowSize parameter, exit code 1 if missing arguments
+//			System.err.println("Usage: java Sender1a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
+//			System.exit(1);
+//		}
+//		
+//		// ============== input arguments ==============
+//		String localhost = args[0];
+//		int portNo = Integer.parseInt(args[1]);
+//		String filename = args[2];
+//		int retryTimeout = Integer.parseInt(args[3]);
+//		int windowSize = Integer.parseInt(args[4]);
 		
-		// ============== input arguments ==============
-		String localhost = args[0];
-		int portNo = Integer.parseInt(args[1]);
-		String filename = args[2];
-		int retryTimeout = Integer.parseInt(args[3]);
-		int windowSize = Integer.parseInt(args[4]);
-
-
+		readArgs(args);
 		Timer timer = new Timer();
 
 		try {
@@ -63,14 +96,17 @@ public class Sender2a {
 						}
 					}
 				}
-			}					
-
+			}		
+			
+//			// ============== Open file image ==============
+//			File file = new File(filename);
+//			FileInputStream fis = new FileInputStream(file);
+//			byte[] imgBytesArr = new byte[(int) file.length()]; // current file in byte array
+//			fis.read(imgBytesArr);
+//			fis.close();
+			
 			// ============== Open file image ==============
-			File file = new File(filename);
-			FileInputStream fis = new FileInputStream(file);
-			byte[] imgBytesArr = new byte[(int) file.length()]; // current file in byte array
-			fis.read(imgBytesArr);
-			fis.close();
+			byte[] imgBytesArr = createImgBytesArr(filename);
 			
 			// ============== imgBytesArr and packet idx pointers ==============
 			int imgBytesArrLen = imgBytesArr.length; // total no. of bytes
