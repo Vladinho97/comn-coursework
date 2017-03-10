@@ -40,7 +40,7 @@ public class Receiver1b {
 				serverSocket.receive(receivePacket); // receive packet from client
 				packetSize = receivePacket.getLength(); // obtain information of client
 				IPAddress = receivePacket.getAddress();
-				portNo = receivePacket.getPort();
+				portNo = receivePacket.getPort();  // TODO: should be client port no. here overwrote the portno?
 				
 				rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
 				ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
