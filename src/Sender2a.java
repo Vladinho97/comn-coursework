@@ -66,7 +66,12 @@ class SendThread implements Runnable {
 	public void run() {
 		System.out.println("****************** Start Sending thread ******************");
 		while (!client.doneACK) {
-			client.sendPacket();
+			try {
+				client.sendPacket();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			};
 		}
 	}
 }
