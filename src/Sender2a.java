@@ -40,7 +40,8 @@ class RcvThread implements Runnable {
 		while (!client.doneACK) {
 			try {
 				client.ackPacket();
-			} catch (IOException e) {
+				Thread.sleep(10);
+			} catch (IOException | InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -68,10 +69,12 @@ class SendThread implements Runnable {
 		while (!client.doneACK) {
 			try {
 				client.sendPacket();
-			} catch (IOException e) {
+				Thread.sleep(10);
+			} catch (IOException | InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			};
 		}
 	}
 }
+

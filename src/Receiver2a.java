@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 
 public class Receiver2a {
 
@@ -40,41 +41,48 @@ public class Receiver2a {
 
 			while (true) {
 				receivePacket.setLength(1027);
-				serverSocket.setSoTimeout(0); // do nothing until a packet is received
+				System.out.println("size = "+receivePacket.getLength());
+				serverSocket.setSoTimeout(1000); // do nothing until a packet is received
 
-				serverSocket.receive(receivePacket); // receive packet from client
-				packetSize = receivePacket.getLength(); // obtain information of client
-				IPAddress = receivePacket.getAddress();
-				clientPortNo = receivePacket.getPort();
-				
-				rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
-				ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
-				ackBuffer[1] = buffer[1];
-				
-				System.out.println("expected : "+expectedSeqNo+"   |   received : "+rcvSeqNo);
-				System.out.println("packetSize = "+ packetSize);
-				if (rcvSeqNo == expectedSeqNo) { // received packet is the right packet
-					byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
-					int currIdx = 0; // index pointer for currBuff
-					for (int i = 3; i < packetSize; i++) { // write received packet's byte values into currBuff
-						currBuff[currIdx] = buffer[i];
-						currIdx++;
-					}
-					out.write(currBuff); // write into file
+				try { 
+					serverSocket.receive(receivePacket); // receive packet from client
+					packetSize = receivePacket.getLength(); // obtain information of client
+					IPAddress = receivePacket.getAddress();
+					clientPortNo = receivePacket.getPort();
 					
-					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, clientPortNo);
-					serverSocket.send(ackPacket); // send ACK to client
-					System.out.println("sent ackPacket for seqno  = "+rcvSeqNo);
-					expectedSeqNo = (expectedSeqNo+1) % 65535; // update expected sequence no by incrementing it
+					rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
+					ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
+					ackBuffer[1] = buffer[1];
 					
-					if (buffer[2] == ((byte) 1)) { // terminates if last packet
-						out.close();
-						serverSocket.close();
-						break;
+					System.out.println("expected : "+expectedSeqNo+"   |   received : "+rcvSeqNo);
+					byte[] rcvByteArr = receivePacket.getData();
+					System.out.println("receivedPacket byte arr length = "+receivePacket.getLength());
+	//				System.out.println("packetSize = "+ packetSize);
+					if (rcvSeqNo == expectedSeqNo && packetSize > 2) { // received packet is the right packet
+						byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
+						int currIdx = 0; // index pointer for currBuff
+						for (int i = 3; i < packetSize; i++) { // write received packet's byte values into currBuff
+							currBuff[currIdx] = buffer[i];
+							currIdx++;
+						}
+						out.write(currBuff); // write into file
+						
+						ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, clientPortNo);
+						serverSocket.send(ackPacket); // send ACK to client
+						System.out.println("sent ackPacket for seqno  = "+rcvSeqNo);
+						expectedSeqNo = (expectedSeqNo+1) % 65535; // update expected sequence no by incrementing it
+						
+						if (buffer[2] == ((byte) 1)) { // terminates if last packet
+							out.close();
+							serverSocket.close();
+							break;
+						}
+					} else { // ACK packet lost
+						ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
+						serverSocket.send(ackPacket); // resend ACK packet
 					}
-				} else { // ACK packet lost
-					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
-					serverSocket.send(ackPacket); // resend ACK packet
+				} catch (SocketTimeoutException e) {
+					
 				}
 			}
 		} catch (Exception e) {

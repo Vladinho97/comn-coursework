@@ -133,6 +133,8 @@ public class Client {
 			// ------------------------------ update values --------------------------------
 			if (base == nextseqnum) { // if no unAck'd packets
 				System.out.println("sendPacket(): base == nextseqnum, schedule timer!");
+				timer.cancel();
+				timer = new Timer();
 				timer.schedule(new ResendTask(this), retryTimeout);
 			}
 			nextseqnum = (nextseqnum+1) % 65535; // increment next available sequence no 
@@ -160,9 +162,10 @@ public class Client {
 				pktsBuffer.remove(0);
 				if (base == nextseqnum) {
 					timer.cancel();
-					timer = new Timer(); 
 					System.out.println("ackPacket(): base == nextseqnum, timer cancelled.");
 				} else {
+					timer.cancel();
+					timer = new Timer();
 					timer.schedule(new ResendTask(this), retryTimeout);
 				}
 			}
@@ -174,10 +177,12 @@ public class Client {
 		synchronized (lock) {
 			System.out.println("resendPacket(): seqno = "+seqNoInt+"   |   pktsBuffer.size() = "+pktsBuffer.size());
 			for (int i = 0; i < pktsBuffer.size(); i++) {
+				DatagramPacket currPkt = pktsBuffer.get(i);
+				System.out.println("pkt size = "+currPkt.getLength());
 				clientSocket.send(pktsBuffer.get(i));
 			}
+			timer.schedule(new ResendTask(this), retryTimeout);
 		}
-		timer.schedule(new ResendTask(this), retryTimeout);
 	}
 	
 //	public boolean canSendMore() {
