@@ -51,6 +51,8 @@ public class Receiver2a {
 				ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 				ackBuffer[1] = buffer[1];
 				
+				System.out.println("expected : "+expectedSeqNo+"   |   received : "+rcvSeqNo);
+				
 				if (rcvSeqNo == expectedSeqNo) { // received packet is the right packet
 					byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
 					int currIdx = 0; // index pointer for currBuff
@@ -62,7 +64,7 @@ public class Receiver2a {
 					
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, clientPortNo);
 					serverSocket.send(ackPacket); // send ACK to client
-					
+					System.out.println("sent ackPacket for seqno  = "+rcvSeqNo);
 					expectedSeqNo = (expectedSeqNo+1) % 65535; // update expected sequence no by incrementing it
 					
 					if (buffer[2] == ((byte) 1)) { // terminates if last packet
@@ -73,6 +75,7 @@ public class Receiver2a {
 				} else { // ACK packet lost
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
 					serverSocket.send(ackPacket); // resend ACK packet
+					System.out.println("resend ackPacket for "+rcvSeqNo)
 				}
 			}
 		} catch (Exception e) {
