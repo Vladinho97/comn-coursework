@@ -38,11 +38,6 @@ class RcvThread implements Runnable {
 	public void run() {
 		System.out.println("****************** Start Receiving thread ******************");
 		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
-		try {
 			while (!client.doneACK) {
 //				System.out.println("RcvThread: client not done acking");
 				client.ackPacket();
@@ -61,11 +56,6 @@ class SendThread implements Runnable {
 	@Override
 	public void run() {
 		System.out.println("****************** Start Sending thread ******************");
-		try {
-			Thread.sleep(5000);
-		} catch (InterruptedException e1) {
-			e1.printStackTrace();
-		}
 		while (!client.doneACK) {
 //			System.out.println("SendThread: client not done acking");
 			if (client.canSendMore()) {

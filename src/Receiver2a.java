@@ -36,7 +36,6 @@ public class Receiver2a {
 			DatagramPacket ackPacket; // ACK packet to be sent to client
 			byte[] ackBuffer = new byte[2]; // 2 byte for ACK 
 			int rcvSeqNo; // sequence number received from client
-			int lastAckNo = 0; // last ack'd sequence no.
 			int expectedSeqNo = 0 % 65535; // expected value of received sequence number, begins with 0
 
 			while (true) {
@@ -66,7 +65,6 @@ public class Receiver2a {
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, clientPortNo);
 					serverSocket.send(ackPacket); // send ACK to client
 					System.out.println("sent ackPacket for seqno  = "+rcvSeqNo);
-					lastAckNo = rcvSeqNo;
 					expectedSeqNo = (expectedSeqNo+1) % 65535; // update expected sequence no by incrementing it
 					
 					if (buffer[2] == ((byte) 1)) { // terminates if last packet
@@ -75,11 +73,8 @@ public class Receiver2a {
 						break;
 					}
 				} else { // ACK packet lost
-					ackBuffer[0] = (byte) (lastAckNo >>> 8); // store sequence no. value as two byte values
-					ackBuffer[1] = (byte) lastAckNo;
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
 					serverSocket.send(ackPacket); // resend ACK packet
-					System.out.println("resend ackPacket for "+lastAckNo);
 				}
 			}
 		} catch (Exception e) {

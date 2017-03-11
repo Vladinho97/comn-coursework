@@ -78,12 +78,21 @@ public class Client {
 		fis.close();
 	}
 
-	public synchronized boolean canSendMore() {
-		if (pktsBuffer.size()<windowSize && imgBytesArrIdx<imgBytesArrLen) {
-//			System.out.println("SYNC: ================= canSendMore() --- TRUE =============");
+	public synchronized void addPktToBuffer(DatagramPacket pkt) {
+		pktsBuffer.add(pkt);
+	}
+	public synchronized void rmvPktFromBuffer() {
+		pktsBuffer.remove(0);
+	}
+	public synchronized int getPktsBufferSize() {
+		return pktsBuffer.size();
+	}
+	
+	public boolean canSendMore() {
+		if (getPktsBufferSize()<windowSize && imgBytesArrIdx<imgBytesArrLen) {
+//		if (pktsBuffer.size()<windowSize && imgBytesArrIdx<imgBytesArrLen) {
 			return true;
 		}
-//		System.out.println("SYNC: ================= canSendMore() --- FALSE =============");
 		return false;
 	}
 	
@@ -124,8 +133,8 @@ public class Client {
 			timer.schedule(new ResendTask(this), retryTimeout);
 		}
 		nextseqnum = (nextseqnum+1) % 65535; // increment next available sequence no 
-		pktsBuffer.add(sendPacket); // add sent packet to buffer
-		System.out.println("sendPacket(): incremented nextseqnum = "+nextseqnum+" and added packet to pktsBuffer with size = "+pktsBuffer.size());
+		addPktToBuffer(sendPacket); // add sent packet to buffer
+		System.out.println("sendPacket(): incremented nextseqnum = "+nextseqnum+" and added packet to pktsBuffer with size = "+getPktsBufferSize());
 	}
 	
 	
@@ -135,7 +144,7 @@ public class Client {
 		System.out.println("================= ackPacket() ==============");
 		rcvPacket.setLength(2);
 		// ---------------------------- this is last packet -------------------------
-		if (endFlag==(byte)1 && pktsBuffer.size()==1) { // last one packet that needs to be ack
+		if (endFlag==(byte)1 && getPktsBufferSize()==1) { // last one packet that needs to be ack
 			timer.cancel(); // switch to setSoTimeOut instead
 			while (true) {
 				System.out.println("ackPacket(): trying to receive last ack");
@@ -165,29 +174,23 @@ public class Client {
 		// ----------------------------- ordinary packets -------------------------------
 		else {
 			System.out.println("ackPacket(): trying to receive ordinary packets.");
-			clientSocket.setSoTimeout(1000); 
-			try {
-				clientSocket.receive(rcvPacket);
-				rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] &0xff));
-				System.out.println("ackPacket(): received: "+rcvSeqNoInt+"   |   base : "+base);
-				if (rcvSeqNoInt == base) {
-					System.out.println("ackPacket(): rcvSeqNoInt == base, update variables.");
-					update();
-				}
-			} catch (SocketTimeoutException e) {
-				
+			clientSocket.receive(rcvPacket);
+			rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] &0xff));
+			System.out.println("ackPacket(): received: "+rcvSeqNoInt+"   |   base : "+base);
+			if (rcvSeqNoInt == base) {
+				System.out.println("ackPacket(): rcvSeqNoInt == base, update variables.");
+				update();
 			}
 		}
-
 	}
 	
 	
 	// method to resend packets in the window
-	public void resendPackets() throws IOException {
+	public synchronized void resendPackets() throws IOException {
 		System.out.println("SYNC: ================= resendPackets() ==============");
 		System.out.println("resendPacket(): seqno = "+seqNoInt);
-		System.out.println("resendPacket(): resending "+pktsBuffer.size()+" packets.");
-		for (int i = 0; i < pktsBuffer.size(); i++) {
+		System.out.println("resendPacket(): resending "+getPktsBufferSize()+" packets.");
+		for (int i = 0; i < getPktsBufferSize(); i++) {
 			clientSocket.send(pktsBuffer.get(i));
 		}
 		timer.schedule(new ResendTask(this), retryTimeout);
@@ -198,8 +201,8 @@ public class Client {
 	public synchronized void update() {
 		System.out.println("SYNC: ================= update() ==============");
 		base = (base+1) % 65535; 
-		pktsBuffer.remove(0); 
-		System.out.println("update(): updated values:   base = "+base+"   |   pktsBuffer.size() = "+pktsBuffer.size());
+		rmvPktFromBuffer(); 
+		System.out.println("update(): updated values:   base = "+base+"   |   pktsBuffer.size() = "+getPktsBufferSize());
 		System.out.println("update(): nextseqnum = "+nextseqnum);
 		if (base == nextseqnum) {
 			timer.cancel();
