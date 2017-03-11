@@ -176,8 +176,8 @@ public class Client {
 			for (int i = 0; i < pktsBuffer.size(); i++) {
 				clientSocket.send(pktsBuffer.get(i));
 			}
-			timer.schedule(new ResendTask(this), retryTimeout);
 		}
+		timer.schedule(new ResendTask(this), retryTimeout);
 	}
 	
 //	public boolean canSendMore() {
