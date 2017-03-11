@@ -80,10 +80,10 @@ public class Client {
 
 	public synchronized boolean canSendMore() {
 		if (pktsBuffer.size()<windowSize && imgBytesArrIdx<imgBytesArrLen) {
-			System.out.println("SYNC: ================= canSendMore() --- TRUE =============");
+//			System.out.println("SYNC: ================= canSendMore() --- TRUE =============");
 			return true;
 		}
-		System.out.println("SYNC: ================= canSendMore() --- FALSE =============");
+//		System.out.println("SYNC: ================= canSendMore() --- FALSE =============");
 		return false;
 	}
 	

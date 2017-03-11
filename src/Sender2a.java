@@ -44,7 +44,7 @@ class RcvThread implements Runnable {
 		}
 		try {
 			while (!client.doneACK) {
-				System.out.println("RcvThread: client not done acking");
+//				System.out.println("RcvThread: client not done acking");
 				client.ackPacket();
 			}
 		} catch (IOException e) {
@@ -67,9 +67,9 @@ class SendThread implements Runnable {
 			e1.printStackTrace();
 		}
 		while (!client.doneACK) {
-			System.out.println("SendThread: client not done acking");
+//			System.out.println("SendThread: client not done acking");
 			if (client.canSendMore()) {
-				System.out.println("SendThread: client can send more");
+//				System.out.println("SendThread: client can send more");
 				try {
 					client.sendPacket();
 				} catch (IOException e) {
