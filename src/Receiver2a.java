@@ -52,7 +52,7 @@ public class Receiver2a {
 				ackBuffer[1] = buffer[1];
 				
 				System.out.println("expected : "+expectedSeqNo+"   |   received : "+rcvSeqNo);
-				
+				System.out.println("packetSize = "+ packetSize);
 				if (rcvSeqNo == expectedSeqNo) { // received packet is the right packet
 					byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
 					int currIdx = 0; // index pointer for currBuff
