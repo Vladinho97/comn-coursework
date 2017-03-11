@@ -36,7 +36,7 @@ public class Receiver2a {
 			DatagramPacket ackPacket; // ACK packet to be sent to client
 			byte[] ackBuffer = new byte[2]; // 2 byte for ACK 
 			int rcvSeqNo; // sequence number received from client
-			int lastAckNo = (Integer) null; // last ack'd sequence no.
+			int lastAckNo = 0; // last ack'd sequence no.
 			int expectedSeqNo = 0 % 65535; // expected value of received sequence number, begins with 0
 
 			while (true) {
