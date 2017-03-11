@@ -75,7 +75,7 @@ public class Receiver2a {
 				} else { // ACK packet lost
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
 					serverSocket.send(ackPacket); // resend ACK packet
-					System.out.println("resend ackPacket for "+rcvSeqNo)
+					System.out.println("resend ackPacket for "+rcvSeqNo);
 				}
 			}
 		} catch (Exception e) {
