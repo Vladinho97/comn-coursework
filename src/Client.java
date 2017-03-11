@@ -185,6 +185,7 @@ public class Client {
 	// method to resend packets in the window
 	public synchronized void resendPackets() throws IOException {
 		System.out.println("SYNC: ================= resendPackets() ==============");
+		System.out.println("resendPacket(): seqno = "+seqNoInt);
 		System.out.println("resendPacket(): resending "+pktsBuffer.size()+" packets.");
 		for (int i = 0; i < pktsBuffer.size(); i++) {
 			clientSocket.send(pktsBuffer.get(i));
