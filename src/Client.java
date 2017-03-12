@@ -56,7 +56,6 @@ public class Client {
 	private int incre = 0, seqNoInt = 0, base = 0, nextseqnum = 0;
 	private ArrayList<DatagramPacket> pktsBuffer = new ArrayList<DatagramPacket>();
 	private byte endFlag = (byte) 0; // last packet flag
-	private int lastPktAttempt = 0; // attempt to send last pkt, to check for lost last ACK
 	private Timer timer = new Timer();
 	
 	// ============= variables related to receiving packets ==========

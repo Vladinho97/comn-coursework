@@ -12,13 +12,13 @@ public class Receiver2a {
 	static public String filename;
 	
 	public static void readArgs(String[] args) {
-		if (args.length != 3) { // ignoring WindowSize parameter, exit code 1 if missing arguments
+		if (args.length != 2) { // ignoring WindowSize parameter, exit code 1 if missing arguments
 			System.err.println("Usage: Receiver1a <Port> <Filename> [WindowSize]");
 			System.exit(1);
 		}
 		portNo = Integer.parseInt(args[0]); // read arguments
 		filename = args[1];
-		windowSize = Integer.parseInt(args[2]);
+//		windowSize = Integer.parseInt(args[2]);
 	}
 	
 	public static void main(String[] args) {
@@ -55,8 +55,7 @@ public class Receiver2a {
 					ackBuffer[1] = buffer[1];
 					
 					System.out.println("expected : "+expectedSeqNo+"   |   received : "+rcvSeqNo);
-					byte[] rcvByteArr = receivePacket.getData();
-					System.out.println("receivedPacket byte arr length = "+receivePacket.getLength());
+					System.out.println("packetSize = "+packetSize);
 	//				System.out.println("packetSize = "+ packetSize);
 					if (rcvSeqNo == expectedSeqNo && packetSize > 2) { // received packet is the right packet
 						byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
