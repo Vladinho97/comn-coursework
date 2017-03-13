@@ -23,7 +23,8 @@ public class Receiver1b {
 			byte[] buffer = new byte[1027]; // received packet buffer: 3 bytes header and 1024 bytes payload
 			DatagramSocket serverSocket = new DatagramSocket(portNo);
 			DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
-			InetAddress IPAddress; // IP address from received packet
+			InetAddress clientIPAddress; // IP address from received packet
+			int clientPortNo;
 			
 			int packetSize; // current received packet size 
 			OutputStream out = new BufferedOutputStream(new FileOutputStream(filename)); // write image to file
@@ -39,8 +40,8 @@ public class Receiver1b {
 
 				serverSocket.receive(receivePacket); // receive packet from client
 				packetSize = receivePacket.getLength(); // obtain information of client
-				IPAddress = receivePacket.getAddress();
-				portNo = receivePacket.getPort();  // TODO: should be client port no. here overwrote the portno?
+				clientIPAddress = receivePacket.getAddress();
+				clientPortNo = receivePacket.getPort();  // TODO: should be client port no. here overwrote the portno?
 				
 				rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
 				ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
@@ -55,7 +56,7 @@ public class Receiver1b {
 					}
 					out.write(currBuff); // write into file
 					
-					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
+					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 					serverSocket.send(ackPacket); // send ACK to client
 					
 					if (expectedSeqNo == 0) // update expected value of received sequence number
@@ -69,7 +70,7 @@ public class Receiver1b {
 						break;
 					}
 				} else { // ACK packet lost
-					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, IPAddress, portNo);
+					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 					serverSocket.send(ackPacket); // resend ACK packet
 				}
 			}
