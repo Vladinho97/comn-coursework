@@ -51,19 +51,9 @@ class RcvThread implements Runnable {
 		while (!client.doneACK) {
 			try {
 				client.ackPacket();
-<<<<<<< HEAD
-				Thread.sleep(10);
-			} catch (IOException e) {
-				e.printStackTrace();
-			} catch (InterruptedException e) {
-=======
-				// Thread.sleep(10);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			//  catch (InterruptedException e) {
-			// 	e.printStackTrace();
-			// }
 		}
 		try {
 			client.bw.write("???????????????????????? finish acking ????????????????????????????????");
@@ -73,28 +63,28 @@ class RcvThread implements Runnable {
 	}
 }
 
-class ReceivingThread implements Runnable {
-	private DatagramSocket clientSocket;
-	private byte[] ackBuffer = new byte[2]; // ACK value from rcvPacket stored here
-	private DatagramPacket rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
-	private Client client;
-	public ReceivingThread( Client client, DatagramSocket socket) {
-		this.clientSocket = socket;
-		this.client = client;
-	}
-
-	public void run() {
-		while (!client.doneACK) {
-			try {
-				rcvPacket.setLength(2);
-				clientSocket.receive(rcvPacket);
-				client.ackPacket(rcvPacket);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-}
+//class ReceivingThread implements Runnable {
+//	private DatagramSocket clientSocket;
+//	private byte[] ackBuffer = new byte[2]; // ACK value from rcvPacket stored here
+//	private DatagramPacket rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
+//	private Client client;
+//	public ReceivingThread( Client client, DatagramSocket socket) {
+//		this.clientSocket = socket;
+//		this.client = client;
+//	}
+//
+//	public void run() {
+//		while (!client.doneACK) {
+//			try {
+//				rcvPacket.setLength(2);
+//				clientSocket.receive(rcvPacket);
+//				client.ackPacket(rcvPacket);
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//			}
+//		}
+//	}
+//}
 
 class SendThread implements Runnable {
 	private Client client;
