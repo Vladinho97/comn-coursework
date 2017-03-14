@@ -198,10 +198,12 @@ public class Client {
 			synchronized (lock) {
 				bw.write("ackPacket(): locked object\n"
 						+ "ackPacket(): base : "+base+"   |   nextseqnum : "+nextseqnum+"\n");
-				if (rcvSeqNoInt == base) {
-					bw.write("ackPacket(): rcvSeqNoInt == base, update variables.\n");
-					base = (base+1) % 65535;
-					pktsBuffer.remove(0);
+				if (rcvSeqNoInt >= base) {
+					bw.write("ackPacket(): rcvSeqNoInt >= base, update variables.\n");
+					base = (rcvSeqNoInt+1) % 65535;
+					for (int i = 0; i < (rcvSeqNoInt-base+1); i++) {
+						pktsBuffer.remove(i);
+					}
 					bw.write("ackPacket(): update base : "+base+"   |   pktsBuffer.size() : "+pktsBuffer.size()+"\n");
 					if (base == nextseqnum) {
 						timer.cancel();
@@ -215,6 +217,23 @@ public class Client {
 				} else {
 					bw.write("ackPacket(): rcvSeqNoInt != base. disregard\n");
 				}
+//				if (rcvSeqNoInt == base) {
+//					bw.write("ackPacket(): rcvSeqNoInt == base, update variables.\n");
+//					base = (base+1) % 65535;
+//					pktsBuffer.remove(0);
+//					bw.write("ackPacket(): update base : "+base+"   |   pktsBuffer.size() : "+pktsBuffer.size()+"\n");
+//					if (base == nextseqnum) {
+//						timer.cancel();
+//						bw.write("ackPacket(): base == nextseqnum, timer cancelled.\n");
+//					} else {
+//						timer.cancel();
+//						timer = new Timer();
+//						timer.schedule(new ResendTask(this), retryTimeout);
+//						bw.write("ackPacket(): base != nextseqnum. new timer and scheduled.\n");
+//					}
+//				} else {
+//					bw.write("ackPacket(): rcvSeqNoInt != base. disregard\n");
+//				}
 			}
 		}
 	}
