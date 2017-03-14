@@ -72,8 +72,8 @@ public class Server {
 			if (buffer[2] == ((byte) 1)) { // terminates if last packet
 				out.close();
 				serverSocket.close();
-				fw.close();
 				bw.close();
+				fw.close();
 				endFlag = (byte) 1;
 			}
 		} else { // ACK packet lost

@@ -36,7 +36,6 @@ class RcvThread implements Runnable {
 	}
 	@Override
 	public void run() {
-		System.out.println("****************** Start Receiving thread ******************");
 		while (!client.doneACK) {
 			try {
 				client.ackPacket();
@@ -44,6 +43,7 @@ class RcvThread implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		return;
 	}
 }
 
@@ -54,7 +54,6 @@ class SendThread implements Runnable {
 	}
 	@Override
 	public void run() {
-		System.out.println("****************** Start Sending thread ******************");
 		while (!client.doneSEND) {
 			try {
 				client.sendPacket();
@@ -62,5 +61,6 @@ class SendThread implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		return;
 	}
 }

@@ -31,6 +31,7 @@ class ResendTask extends TimerTask {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		return;
 	}
 }
 
@@ -57,7 +58,7 @@ public class Client {
 	private int incre = 0, seqNoInt = 0, base = 0, nextseqnum = 0;
 	private ArrayList<DatagramPacket> pktsBuffer = new ArrayList<DatagramPacket>();
 	private byte endFlag = (byte) 0; // last packet flag
-	private Timer timer = new Timer();
+	Timer timer = new Timer();
 	private int attempt = 0; // no. of attempts to send the last packet
 
 	// ============= variables related to receiving packets ==========
@@ -134,7 +135,7 @@ public class Client {
 			bw.write("sendPacket(): sent packet to IPAddress : "+IPAddress+"    |    portNo : "+portNo);
 			// ------------------------------ update values --------------------------------
 			if (base == nextseqnum) { // if no unAck'd packets
-				System.out.println("sendPacket(): base == nextseqnum, cancel timer, schedule timer!\n");
+				timer.cancel();
 				timer = new Timer();
 				timer.schedule(new ResendTask(this), retryTimeout);
 			}
@@ -161,19 +162,21 @@ public class Client {
 				bw.write("ackPacket(): received packet with rcvSeqNoInt : "+rcvSeqNoInt+"\n");
 				synchronized (lock) {
 					if (rcvSeqNoInt == base) {
+						pktsBuffer.remove(0);
 						bw.write("ackPacket(): locked object\n"
 								+ "ackPacket(): base : "+base+"   |   nextseqnum : "+nextseqnum+"\n");
 						doneACK = true;
+						bw.write("ackPacket(): doneACK!");
 						bw.close();
 						fw.close();
 						clientSocket.close();
-						bw.write("ackPacket(): doneACK!");
 					} else {
 						bw.write("ackPacket(): rcvSeqNoInt != base. disregard\n");
 					}
 				}
 			} catch (SocketTimeoutException e) {
 				if (attempt >= 50) {
+					pktsBuffer.remove(0);
 					doneACK = true;
 					bw.close();
 					fw.close();
@@ -230,6 +233,7 @@ public class Client {
 				bw.write("resendPackets(): resend packet with seqNoInt : "+currSeqNo+"    |   portNo : "+currPkt.getPort()+"   |   IPAddress : "+currPkt.getAddress()+"\n");
 				clientSocket.send(currPkt);
 			}
+			timer.cancel();
 			timer = new Timer();
 			timer.schedule(new ResendTask(this), retryTimeout);
 			bw.write("resendPackets(): scheduled new timer.\n");
