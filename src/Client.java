@@ -25,6 +25,7 @@ class ResendTask extends TimerTask {
 	@Override
 	public void run() {
 		try {
+			System.out.println("+++++++++++++++++= Running timer task ++++++++++++++++++++++");
 			client.bw.write("+++++++++++++++++++++ Running timer task ++++++++++++++++++++++");
 			client.resendPackets();
 			client.bw.write("+++++++++++++++++++++ Finish timer task +++++++++++++++++++++++");
@@ -170,6 +171,7 @@ public class Client {
 						bw.close();
 						fw.close();
 						clientSocket.close();
+						return;
 					} else {
 						bw.write("ackPacket(): rcvSeqNoInt != base. disregard\n");
 					}
@@ -182,6 +184,7 @@ public class Client {
 					fw.close();
 					clientSocket.close();
 					bw.write("ackPacket(): last packet ack attempt >= 50, assume lost! doneACK!\n");
+					return;
 				}
 				attempt++;
 				clientSocket.send(pktsBuffer.get(0));
@@ -194,25 +197,27 @@ public class Client {
 			clientSocket.receive(rcvPacket);
 			ackBuffer = rcvPacket.getData();
 			rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-			System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt);
+			System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
 			bw.write("ackPacket(): received packet with rcvSeqNoInt : "+rcvSeqNoInt+"\n");
 			synchronized (lock) {
 				bw.write("ackPacket(): locked object\n"
 						+ "ackPacket(): base : "+base+"   |   nextseqnum : "+nextseqnum+"\n");
 				if (rcvSeqNoInt >= base) {
 					bw.write("ackPacket(): rcvSeqNoInt >= base, update variables.\n");
-					base = (rcvSeqNoInt+1) % 65535;
 					for (int i = 0; i < (rcvSeqNoInt-base+1); i++) {
-						pktsBuffer.remove(i);
+						pktsBuffer.remove(0);
 					}
+					base = (rcvSeqNoInt+1) % 65535;
 					bw.write("ackPacket(): update base : "+base+"   |   pktsBuffer.size() : "+pktsBuffer.size()+"\n");
 					if (base == nextseqnum) {
+						System.out.println("base == nextseqnum, cancel timer");
 						timer.cancel();
 						bw.write("ackPacket(): base == nextseqnum, timer cancelled.\n");
 					} else {
 						timer.cancel();
 						timer = new Timer();
 						timer.schedule(new ResendTask(this), retryTimeout);
+						System.out.println("Schedule new timer");
 						bw.write("ackPacket(): base != nextseqnum. new timer and scheduled.\n");
 					}
 				} else {
@@ -257,6 +262,7 @@ public class Client {
 			timer.cancel();
 			timer = new Timer();
 			timer.schedule(new ResendTask(this), retryTimeout);
+			System.out.println("scheduled timer");
 			bw.write("resendPackets(): scheduled new timer.\n");
 		}
 	}
