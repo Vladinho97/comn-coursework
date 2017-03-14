@@ -44,6 +44,7 @@ class RcvThread implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		client.printOutputs();
 		return;
 	}
 }
