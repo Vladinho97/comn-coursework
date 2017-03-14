@@ -15,7 +15,7 @@ public class Receiver2a {
 		while (server.endFlag != (byte)1) {
 			server.receivePacket();
 		}
-		System.out.println("done receiving!");
+//		System.out.println("done receiving!");
 	}
 }
 //	static public int portNo;

@@ -61,7 +61,7 @@ public class Server {
 		ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 		ackBuffer[1] = buffer[1];
 
-		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
+//		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
 		if (rcvSeqNo == expectedSeqNo) { // received packet is the right packet
 			bw.write("rcvSeqNo == expectedSeqNo!\n");
 			byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
@@ -82,17 +82,18 @@ public class Server {
 				endFlag = (byte) 1;
 				return;
 			}
-		} else { // ACK packet lost
+		} 
+//		else { // ACK packet lost
 //			ackBuffer[0] = temp[0];
 //			ackBuffer[1] = temp[1];
 //			resendACK();
-		}
+//		}
 	}
 	
 	public void sendACK() throws IOException {
 		ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 		bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
-		System.out.println("send ack packet: received : "+rcvSeqNo);
+//		System.out.println("send ack packet: received : "+rcvSeqNo);
 		serverSocket.send(ackPacket); // send ACK to client
 		expectedSeqNo = (expectedSeqNo+1) % 65535; // update expected sequence no by incrementing it
 		bw.write("updated expectedSeqNo : "+expectedSeqNo+"\n");
@@ -102,7 +103,7 @@ public class Server {
 	public void resendACK() throws IOException {
 		bw.write("rcvSeqNo != expectedSeqNo!\n");
 		ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
-		System.out.println("send ack packet: received : "+rcvSeqNo);
+//		System.out.println("send ack packet: received : "+rcvSeqNo);
 		serverSocket.send(ackPacket); // resend ACK packet
 		bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
 		return;

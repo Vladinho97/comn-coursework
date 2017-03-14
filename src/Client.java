@@ -58,7 +58,7 @@ public class Client {
 	private int incre = 0, seqNoInt = 0, base = 0, nextseqnum = 0;
 	private ArrayList<DatagramPacket> pktsBuffer = new ArrayList<DatagramPacket>();
 	private byte endFlag = (byte) 0; // last packet flag
-	Timer timer = new Timer();
+	private Timer timer = new Timer();
 	private int attempt = 0; // no. of attempts to send the last packet
 
 	// ============= variables related to receiving packets ==========
@@ -209,14 +209,14 @@ public class Client {
 					base = (rcvSeqNoInt+1) % 65535;
 					bw.write("ackPacket(): update base : "+base+"   |   pktsBuffer.size() : "+pktsBuffer.size()+"\n");
 					if (base == nextseqnum) {
-						System.out.println("base == nextseqnum, cancel timer");
+//						System.out.println("base == nextseqnum, cancel timer");
 						timer.cancel();
 						bw.write("ackPacket(): base == nextseqnum, timer cancelled.\n");
 					} else {
 						timer.cancel();
 						timer = new Timer();
 						timer.schedule(new ResendTask(this), retryTimeout);
-						System.out.println("Schedule new timer");
+//						System.out.println("Schedule new timer");
 						bw.write("ackPacket(): base != nextseqnum. new timer and scheduled.\n");
 					}
 				} else {
