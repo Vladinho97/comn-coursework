@@ -25,7 +25,6 @@ class ResendTask extends TimerTask {
 	@Override
 	public void run() {
 		try {
-			System.out.println("+++++++++++++++++= Running timer task ++++++++++++++++++++++");
 			client.bw.write("+++++++++++++++++++++ Running timer task ++++++++++++++++++++++");
 			client.resendPackets();
 			client.bw.write("+++++++++++++++++++++ Finish timer task +++++++++++++++++++++++");
@@ -197,7 +196,7 @@ public class Client {
 			clientSocket.receive(rcvPacket);
 			ackBuffer = rcvPacket.getData();
 			rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-			System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
+//			System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
 			bw.write("ackPacket(): received packet with rcvSeqNoInt : "+rcvSeqNoInt+"\n");
 			synchronized (lock) {
 				bw.write("ackPacket(): locked object\n"
@@ -249,7 +248,7 @@ public class Client {
 		synchronized (lock) {
 			bw.write("resendPackets(): lock object\n");
 			bw.write("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size()+"\n");
-			System.out.println("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size());
+//			System.out.println("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size());
 			for (int i = 0; i < pktsBuffer.size(); i++) {
 				DatagramPacket currPkt = pktsBuffer.get(i);
 				byte[] dataByte = currPkt.getData();
@@ -262,7 +261,7 @@ public class Client {
 			timer.cancel();
 			timer = new Timer();
 			timer.schedule(new ResendTask(this), retryTimeout);
-			System.out.println("scheduled timer");
+//			System.out.println("scheduled timer");
 			bw.write("resendPackets(): scheduled new timer.\n");
 		}
 	}

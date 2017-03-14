@@ -52,7 +52,6 @@ public class Server {
 		
 		bw.write("serverSocket : portNo : "+serverSocket.getPort()+"   |   IPAddress : "+serverSocket.getInetAddress()+"\n");
 		bw.write("packet received: packetSize : "+packetSize+"   |   clientPortNo : "+clientPortNo+"   |   clientIPAddress : "+clientIPAddress+"\n");
-		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
 
 //		byte[] temp = new byte[2];
 //		temp[0] = ackBuffer[0];
@@ -62,6 +61,7 @@ public class Server {
 		ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 		ackBuffer[1] = buffer[1];
 
+		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
 		if (rcvSeqNo == expectedSeqNo) { // received packet is the right packet
 			bw.write("rcvSeqNo == expectedSeqNo!\n");
 			byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
