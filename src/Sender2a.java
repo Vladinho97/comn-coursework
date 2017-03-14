@@ -1,15 +1,4 @@
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.Timer;
-import java.util.TimerTask;
 
 // mount -t vboxsf dummynetshared /mnt/shared
 // ipfw add pipe 100 in
@@ -55,36 +44,8 @@ class RcvThread implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		try {
-			client.bw.write("???????????????????????? finish acking ????????????????????????????????");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 }
-
-//class ReceivingThread implements Runnable {
-//	private DatagramSocket clientSocket;
-//	private byte[] ackBuffer = new byte[2]; // ACK value from rcvPacket stored here
-//	private DatagramPacket rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
-//	private Client client;
-//	public ReceivingThread( Client client, DatagramSocket socket) {
-//		this.clientSocket = socket;
-//		this.client = client;
-//	}
-//
-//	public void run() {
-//		while (!client.doneACK) {
-//			try {
-//				rcvPacket.setLength(2);
-//				clientSocket.receive(rcvPacket);
-//				client.ackPacket(rcvPacket);
-//			} catch (Exception e) {
-//				e.printStackTrace();
-//			}
-//		}
-//	}
-//}
 
 class SendThread implements Runnable {
 	private Client client;
@@ -94,7 +55,7 @@ class SendThread implements Runnable {
 	@Override
 	public void run() {
 		System.out.println("****************** Start Sending thread ******************");
-		while (!client.doneACK) {
+		while (!client.doneSEND) {
 			try {
 				client.sendPacket();
 			} catch (IOException e) {

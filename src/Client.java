@@ -24,9 +24,10 @@ class ResendTask extends TimerTask {
 	}
 	@Override
 	public void run() {
-		System.out.println("++++++++++++++++++++++++++ Run Timer Task +++++++++++++++++++++");
 		try {
+			client.bw.write("+++++++++++++++++++++ Running timer task ++++++++++++++++++++++");
 			client.resendPackets();
+			client.bw.write("+++++++++++++++++++++ Finish timer task +++++++++++++++++++++++");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -57,6 +58,7 @@ public class Client {
 	private ArrayList<DatagramPacket> pktsBuffer = new ArrayList<DatagramPacket>();
 	private byte endFlag = (byte) 0; // last packet flag
 	private Timer timer = new Timer();
+	private int attempt = 0; // no. of attempts to send the last packet
 
 	// ============= variables related to receiving packets ==========
 	private byte[] ackBuffer = new byte[2]; // ACK value from rcvPacket stored here
@@ -90,28 +92,21 @@ public class Client {
 
 	Object lock = new Object();
 
-	// boolean noMorePackets = false;
+	boolean doneSEND = false;
 	public void sendPacket() throws IOException {
-		// bw.write("sendPacket(): calling\n");
-		System.out.println("sendPacket(): calling");
 		if (imgBytesArrIdx >= imgBytesArrLen) {
-			// noMorePackets = true;
 			bw.write("sendPacket(): no more packets to be sent\n");
-			System.out.println("sendPacket(): no more packets to be sent");
+			doneSEND = true;
 			return;
 		}
 		if (pktsBuffer.size() >= windowSize) {
-			// bw.write("sendPacket(): pktsBuffer.size() = "+pktsBuffer.size()+" equals windowSize "+windowSize+". window is full\n");
-			// System.out.println("sendPacket(): pktsBuffer.size() = "+pktsBuffer.size()+" equals windowSize "+windowSize+". window is full");
 			return;
 		}
 		synchronized (lock) {
 			bw.write("sendPacket(): locked object\n");
-			System.out.println("sendPacket(): locked object.");
 			seqNoInt = incre % 65535;
 			incre++;
 			bw.write("sendPacket(): creating a packet with seqNoInt = "+seqNoInt+"    |    base : "+base+"   |   nextseqnum : "+nextseqnum+"\n");
-			System.out.println("sendPacket(): creating a packet with seqNoInt : "+seqNoInt+"    |    base : "+base+"   |   nextseqnum : "+nextseqnum);
 			// ------------------------------ create new packet --------------------------------
 			int packetIdx = 3, packetSize;
 			byte[] buffer;
@@ -139,7 +134,7 @@ public class Client {
 			bw.write("sendPacket(): sent packet to IPAddress : "+IPAddress+"    |    portNo : "+portNo);
 			// ------------------------------ update values --------------------------------
 			if (base == nextseqnum) { // if no unAck'd packets
-				System.out.println("sendPacket(): base == nextseqnum, cancel timer, schedule timer!");
+				System.out.println("sendPacket(): base == nextseqnum, cancel timer, schedule timer!\n");
 				timer = new Timer();
 				timer.schedule(new ResendTask(this), retryTimeout);
 			}
@@ -147,41 +142,67 @@ public class Client {
 			pktsBuffer.add(sendPacket); // add sent packet to packets buffer
 
 			bw.write("sendPacket(): sent packet. seqNoInt : "+seqNoInt+"   |   base : "+base+"   |   nextseqnum : "+nextseqnum+"    |   pktsBuffer.Size() : "+pktsBuffer.size()+"\n");
-			System.out.println("sendPacket(): sent packet. seqNoInt : "+seqNoInt+"   |   base : "+base+"   |   nextseqnum : "+nextseqnum+"    |   pktsBuffer.Size() : "+pktsBuffer.size());
 		}
 	}
 
 	boolean doneACK = false;
 	// tries to receive a packet - the packet with base sequence no
 	public void ackPacket() throws IOException {
-		bw.write("ackPacket(): calling\n");
-		System.out.println("ackPacket(): calling");
 		rcvPacket.setLength(2);
-		clientSocket.setSoTimeout(5000);
-		bw.write("ackPacket(): clientSocket.getPort() : "+clientSocket.getPort()+"   |   clientSocket.getInetAddress(): "+clientSocket.getInetAddress()+"\n");
-		try {
+		// ack last packet 
+		if (endFlag==(byte)1 && pktsBuffer.size()==1) {
+			timer.cancel();
+			bw.write("ackPacket(): Acking last packet!\n");
+			clientSocket.setSoTimeout(retryTimeout);
+			try {
+				clientSocket.receive(rcvPacket);
+				ackBuffer = rcvPacket.getData();
+				rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
+				bw.write("ackPacket(): received packet with rcvSeqNoInt : "+rcvSeqNoInt+"\n");
+				synchronized (lock) {
+					if (rcvSeqNoInt == base) {
+						bw.write("ackPacket(): locked object\n"
+								+ "ackPacket(): base : "+base+"   |   nextseqnum : "+nextseqnum+"\n");
+						doneACK = true;
+						bw.close();
+						fw.close();
+						clientSocket.close();
+						bw.write("ackPacket(): doneACK!");
+					} else {
+						bw.write("ackPacket(): rcvSeqNoInt != base. disregard\n");
+					}
+				}
+			} catch (SocketTimeoutException e) {
+				if (attempt >= 50) {
+					doneACK = true;
+					bw.close();
+					fw.close();
+					clientSocket.close();
+					bw.write("ackPacket(): last packet ack attempt >= 50, assume lost! doneACK!\n");
+				}
+				attempt++;
+				clientSocket.send(pktsBuffer.get(0));
+				bw.write("ackPacket(): socketTimeOutExcpetion, increment attempt and resend last packet!\n");
+			}
+		} else { // ack normal packet
+			bw.write("ackPacket(): Acking normal packets\n");
+			clientSocket.setSoTimeout(0);
+			bw.write("ackPacket(): clientSocket.getPort() : "+clientSocket.getPort()+"   |   clientSocket.getInetAddress(): "+clientSocket.getInetAddress()+"\n");
 			clientSocket.receive(rcvPacket);
 			ackBuffer = rcvPacket.getData();
 			rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
 			bw.write("ackPacket(): received packet with rcvSeqNoInt : "+rcvSeqNoInt+"\n");
-			System.out.println("ackPacket(): received packet with rcvSeqNoInt : "+rcvSeqNoInt);
 			synchronized (lock) {
-				bw.write("ackPacket(): locked object\nackPacket(): base : "+base+"   |   nextseqnum : "+nextseqnum+"\n");
-				System.out.println("ackPacket(): locked object");
-				System.out.println("ackPacket(): base : "+base+"   |   nextseqnum : "+nextseqnum);
+				bw.write("ackPacket(): locked object\n"
+						+ "ackPacket(): base : "+base+"   |   nextseqnum : "+nextseqnum+"\n");
 				if (rcvSeqNoInt == base) {
-					if (endFlag == (byte)1 && pktsBuffer.size() == 1) {
-						doneACK = true;
-					}
 					bw.write("ackPacket(): rcvSeqNoInt == base, update variables.\n");
-					System.out.println("ackPacket(): rcvSeqNoInt == base, update variables.");
 					base = (base+1) % 65535;
 					pktsBuffer.remove(0);
 					bw.write("ackPacket(): update base : "+base+"   |   pktsBuffer.size() : "+pktsBuffer.size()+"\n");
 					if (base == nextseqnum) {
 						timer.cancel();
 						bw.write("ackPacket(): base == nextseqnum, timer cancelled.\n");
-						System.out.println("ackPacket(): base == nextseqnum, timer cancelled.");
 					} else {
 						timer.cancel();
 						timer = new Timer();
@@ -192,59 +213,14 @@ public class Client {
 					bw.write("ackPacket(): rcvSeqNoInt != base. disregard\n");
 				}
 			}
-		} catch (SocketTimeoutException e) {
-			bw.write("I am a bitch!\n");
-			// resendPackets();
 		}
 	}
-//	public void ackPacket(DatagramPacket pkt) throws IOException {
-//		try {
-//			this.rcvPacket = pkt;
-//			ackBuffer = rcvPacket.getData();
-//			rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-//			bw.write("ackPacket(): received packet with rcvSeqNoInt : "+rcvSeqNoInt+"\n");
-//			System.out.println("ackPacket(): received packet with rcvSeqNoInt : "+rcvSeqNoInt);
-//			synchronized (lock) {
-//				bw.write("ackPacket(): locked object\nackPacket(): base : "+base+"   |   nextseqnum : "+nextseqnum+"\n");
-//				System.out.println("ackPacket(): locked object");
-//				System.out.println("ackPacket(): base : "+base+"   |   nextseqnum : "+nextseqnum);
-//				if (rcvSeqNoInt == base) {
-//					if (endFlag == (byte)1 && pktsBuffer.size() == 1) {
-//						doneACK = true;
-//					}
-//					bw.write("ackPacket(): rcvSeqNoInt == base, update variables.\n");
-//					System.out.println("ackPacket(): rcvSeqNoInt == base, update variables.");
-//					base = (base+1) % 65535;
-//					pktsBuffer.remove(0);
-//					bw.write("ackPacket(): update base : "+base+"   |   pktsBuffer.size() : "+pktsBuffer.size()+"\n");
-//					if (base == nextseqnum) {
-//						timer.cancel();
-//						bw.write("ackPacket(): base == nextseqnum, timer cancelled.\n");
-//						System.out.println("ackPacket(): base == nextseqnum, timer cancelled.");
-//					} else {
-//						timer.cancel();
-//						timer = new Timer();
-//						timer.schedule(new ResendTask(this), retryTimeout);
-//						bw.write("ackPacket(): base != nextseqnum. new timer and scheduled.\n");
-//					}
-//				} else {
-//					bw.write("ackPacket(): rcvSeqNoInt != base. disregard\n");
-//				}
-//			}
-//		} catch (SocketTimeoutException e) {
-//			bw.write("I am a bitch!\n");
-//			// resendPackets();
-//		}
-//	}
-
 
 	public void resendPackets() throws IOException {
 		bw.write("resendPackets(): calling \n");
-		System.out.println("================= resendPackets() =============");
 		synchronized (lock) {
 			bw.write("resendPackets(): lock object\n");
 			bw.write("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size()+"\n");
-			System.out.println("resendPacket(): seqNoInt = "+seqNoInt+"   |   base = "+base+"   |   nextseqnum = "+nextseqnum+"   |   pktsBuffer.size() = "+pktsBuffer.size());
 			for (int i = 0; i < pktsBuffer.size(); i++) {
 				DatagramPacket currPkt = pktsBuffer.get(i);
 				byte[] dataByte = currPkt.getData();
@@ -252,12 +228,11 @@ public class Client {
 				byte two = dataByte[1];
 				int currSeqNo = (((one & 0xff)<<8) | (two & 0xff));
 				bw.write("resendPackets(): resend packet with seqNoInt : "+currSeqNo+"    |   portNo : "+currPkt.getPort()+"   |   IPAddress : "+currPkt.getAddress()+"\n");
-				System.out.println("pkt size = "+currPkt.getLength());
 				clientSocket.send(currPkt);
 			}
 			timer = new Timer();
 			timer.schedule(new ResendTask(this), retryTimeout);
-			bw.write("resendPackets(): scheduled new timer.");
+			bw.write("resendPackets(): scheduled new timer.\n");
 		}
 	}
 }
