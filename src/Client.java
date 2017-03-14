@@ -194,6 +194,7 @@ public class Client {
 			clientSocket.receive(rcvPacket);
 			ackBuffer = rcvPacket.getData();
 			rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
+			System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt);
 			bw.write("ackPacket(): received packet with rcvSeqNoInt : "+rcvSeqNoInt+"\n");
 			synchronized (lock) {
 				bw.write("ackPacket(): locked object\n"
@@ -243,6 +244,7 @@ public class Client {
 		synchronized (lock) {
 			bw.write("resendPackets(): lock object\n");
 			bw.write("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size()+"\n");
+			System.out.println("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size());
 			for (int i = 0; i < pktsBuffer.size(); i++) {
 				DatagramPacket currPkt = pktsBuffer.get(i);
 				byte[] dataByte = currPkt.getData();

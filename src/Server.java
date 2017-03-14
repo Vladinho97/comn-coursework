@@ -52,7 +52,8 @@ public class Server {
 		
 		bw.write("serverSocket : portNo : "+serverSocket.getPort()+"   |   IPAddress : "+serverSocket.getInetAddress()+"\n");
 		bw.write("packet received: packetSize : "+packetSize+"   |   clientPortNo : "+clientPortNo+"   |   clientIPAddress : "+clientIPAddress+"\n");
-
+		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
+		
 		rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
 		ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 		ackBuffer[1] = buffer[1];
@@ -84,6 +85,7 @@ public class Server {
 	public void sendACK() throws IOException {
 		ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 		bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
+		System.out.println("send ack packet: received : "+rcvSeqNo);
 		serverSocket.send(ackPacket); // send ACK to client
 		expectedSeqNo = (expectedSeqNo+1) % 65535; // update expected sequence no by incrementing it
 		bw.write("updated expectedSeqNo : "+expectedSeqNo+"\n");
@@ -92,6 +94,7 @@ public class Server {
 	public void resendACK() throws IOException {
 		bw.write("rcvSeqNo != expectedSeqNo!\n");
 		ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+		System.out.println("send ack packet: received : "+rcvSeqNo);
 		serverSocket.send(ackPacket); // resend ACK packet
 		bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
 	}
