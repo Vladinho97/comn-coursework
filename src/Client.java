@@ -70,6 +70,16 @@ public class Client {
 	FileWriter fw;
 	BufferedWriter bw;
 
+	// ================== Program outputs ============================
+	double fileSizeKB; // for measuring throughput - file size in kilo-bytes
+	int noOfRetransmission = 0;
+	double throughput;
+	long estimatedTimeInNano; // time in nano seconds
+	double estimatedTimeInSec; // time in seconds
+	boolean isFirstPacket = true;
+	Long startTime = null; // start and end time
+	Long endTime = null;
+
 	public Client(String localhost, int portNo, String filename, int retryTimeout, int windowSize) throws IOException {
 		this.localhost = localhost;
 		this.portNo = portNo;
@@ -87,6 +97,7 @@ public class Client {
 		FileInputStream fis = new FileInputStream(file);
 		this.imgBytesArrLen = (int) file.length();
 		this.imgBytesArr = new byte[imgBytesArrLen];
+		this.fileSizeKB = ((double)file.length())/1024; 
 		fis.read(imgBytesArr);
 		fis.close();
 	}
@@ -133,6 +144,11 @@ public class Client {
 			sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 			clientSocket.send(sendPacket);
 			bw.write("sendPacket(): sent packet to IPAddress : "+IPAddress+"    |    portNo : "+portNo);
+			// is this first packet?
+			if (isFirstPacket) {
+				startTime = System.nanoTime();
+				isFirstPacket = false;
+			}
 			// ------------------------------ update values --------------------------------
 			if (base == nextseqnum) { // if no unAck'd packets
 				timer.cancel();
@@ -170,6 +186,7 @@ public class Client {
 						bw.close();
 						fw.close();
 						clientSocket.close();
+						endTime = System.nanoTime(); // records end time
 						return;
 					} else {
 						bw.write("ackPacket(): rcvSeqNoInt != base. disregard\n");
@@ -183,6 +200,7 @@ public class Client {
 					fw.close();
 					clientSocket.close();
 					bw.write("ackPacket(): last packet ack attempt >= 50, assume lost! doneACK!\n");
+					endTime = System.nanoTime(); // records end time
 					return;
 				}
 				attempt++;
@@ -257,6 +275,7 @@ public class Client {
 				int currSeqNo = (((one & 0xff)<<8) | (two & 0xff));
 				bw.write("resendPackets(): resend packet with seqNoInt : "+currSeqNo+"    |   portNo : "+currPkt.getPort()+"   |   IPAddress : "+currPkt.getAddress()+"\n");
 				clientSocket.send(currPkt);
+				noOfRetransmission++;
 			}
 			timer.cancel();
 			timer = new Timer();
@@ -264,5 +283,15 @@ public class Client {
 //			System.out.println("scheduled timer");
 			bw.write("resendPackets(): scheduled new timer.\n");
 		}
+	}
+	
+	public void printOutputs() {
+		System.out.println("================== Part2a: output ==================");
+		System.out.println("No of retransmission = "+noOfRetransmission);
+		estimatedTimeInNano = endTime - startTime; 
+		estimatedTimeInSec = ((double)estimatedTimeInNano)/1000000000.0; // convert from nano-sec to sec
+		throughput = fileSizeKB/estimatedTimeInSec;
+		System.out.println("Throughput = "+throughput);
+		System.out.println("================== Program terminates ==================");
 	}
 }
