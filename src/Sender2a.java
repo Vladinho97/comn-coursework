@@ -1,3 +1,5 @@
+/* Isabella Chan s1330027 */
+
 import java.io.IOException;
 
 // mount -t vboxsf dummynetshared /mnt/shared
@@ -20,7 +22,7 @@ public class Sender2a {
 		int retryTimeout = Integer.parseInt(args[3]);
 		int windowSize = Integer.parseInt(args[4]);
 
-		Client client = new Client(localhost, portNo, filename, retryTimeout, windowSize);
+		Client2a client = new Client2a(localhost, portNo, filename, retryTimeout, windowSize);
 		client.openFile(); // opens image file
 
 		Thread rcvtt = new Thread(new RcvThread(client));
@@ -31,8 +33,8 @@ public class Sender2a {
 }
 
 class RcvThread implements Runnable {
-	private Client client;
-	public RcvThread(Client client) {
+	private Client2a client;
+	public RcvThread(Client2a client) {
 		this.client = client;
 	}
 	@Override
@@ -50,8 +52,8 @@ class RcvThread implements Runnable {
 }
 
 class SendThread implements Runnable {
-	private Client client;
-	public SendThread(Client client) {
+	private Client2a client;
+	public SendThread(Client2a client) {
 		this.client = client;
 	}
 	@Override
