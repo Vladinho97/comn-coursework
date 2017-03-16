@@ -9,7 +9,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 
-public class Server {
+public abstract class Server {
 
 	int portNo;
 	String filename;
@@ -59,7 +59,7 @@ public class Server {
 		return;
 	}
 	
-	public void ack_pkts() throws IOException {};
+	public abstract void ack_packets() throws IOException;
 	
 	public void close_everything() throws IOException {
 		out.close();
