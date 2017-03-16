@@ -12,10 +12,10 @@ public class Receiver2a {
 		int portNo = Integer.parseInt(args[0]);
 		String filename = args[1];
 		
-		Server server = new Server(portNo, filename);
+		Server2a server2a = new Server2a(portNo, filename);
 		
-		while (server.endFlag != (byte)1) {
-			server.receivePacket();
+		while (server2a.endFlag != (byte)1) {
+			server2a.receivePacket();
 		}
 //		System.out.println("done receiving!");
 	}

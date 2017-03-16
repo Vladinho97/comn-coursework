@@ -112,10 +112,21 @@ public class Client2b extends Client {
 				int idx = rcvSeqNoInt-base+1;
 				pktsBuffer.remove(idx);
 				timers.remove(idx);
+				if (endFlag==(byte)1 && pktsBuffer.size()==0) { // acking last packet
+					bw.write("ackPacket(): Acked last packet!\n");
+					doneACK = true;
+					bw.write("ackPacket(): doneACK!\n");
+					bw.close();
+					fw.close();
+					clientSocket.close();
+					endTime = System.nanoTime();
+					return;
+				}
 				if (rcvSeqNoInt == base) {
 					base = (base+1) % 65535;
 					bw.write("ackPacket(): update base : "+base+"   |   pktsBuffer.size() : "+pktsBuffer.size()+"\n");
 					if (base == nextseqnum) {
+						System.out.println("base == nextseqnum. pktsBuffer.size() = "+pktsBuffer.size());
 ////						System.out.println("base == nextseqnum, cancel timer");
 //						timer.cancel();
 //						bw.write("ackPacket(): base == nextseqnum, timer cancelled.\n");
