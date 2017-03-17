@@ -1,10 +1,11 @@
 /* Isabella Chan s1330027 */ 
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.ArrayList;
 
 
-public class Server2b extends Server {
+public class Server2b extends AbstractServer {
 	int windowSize;
 	ArrayList<DatagramPacket> window = new ArrayList<DatagramPacket>();
 	
@@ -18,9 +19,9 @@ public class Server2b extends Server {
 	
 	boolean isDone = false;
 	@Override
-	public void ack_packets() throws IOException {
+	public void ackPacket() throws IOException {
 		
-		rcv_packet();
+		receivePacket();
 		
 		// update variables based on received packet
 		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
@@ -48,7 +49,7 @@ public class Server2b extends Server {
 					}
 				}
 				if (isDone) {
-					close_everything();
+					closeAll();
 					return;
 				}
 			}

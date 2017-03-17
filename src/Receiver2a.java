@@ -15,7 +15,7 @@ public class Receiver2a {
 		Server2a server2a = new Server2a(portNo, filename);
 		
 		while (server2a.endFlag != (byte)1) {
-			server2a.receivePacket();
+			server2a.ackPacket();
 		}
 //		System.out.println("done receiving!");
 	}

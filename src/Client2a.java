@@ -2,16 +2,9 @@
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.SocketTimeoutException;
 import java.util.Timer;
 import java.util.TimerTask;
 
-
-// ============================================================================================================
-//
-// 												RESEND TASK
-//
-// ============================================================================================================
 class ResendTask extends TimerTask {
 	private Client2a client;
 	public ResendTask(Client2a client) {
@@ -21,7 +14,7 @@ class ResendTask extends TimerTask {
 	public void run() {
 		try {
 			client.bw.write("+++++++++++++++++++++ Running timer task ++++++++++++++++++++++");
-			client.resendPackets();
+			client.resendPacket();
 			client.bw.write("+++++++++++++++++++++ Finish timer task +++++++++++++++++++++++");
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -30,12 +23,7 @@ class ResendTask extends TimerTask {
 	}
 }
 
-//============================================================================================================
-//
-//												CLIENT CLASS
-//
-//============================================================================================================
-public class Client2a extends Client {
+public class Client2a extends AbstractClient {
 	
 	private Timer timer = new Timer();
 
@@ -168,11 +156,7 @@ public class Client2a extends Client {
 				bw.write("ackPacket(): update base : "+base+"   |   pktsBuffer.size() : "+pktsBuffer.size()+"\n");
 				if (endFlag==(byte)1 && pktsBuffer.size()==0) { // acked last packet
 					doneACK = true;
-					bw.write("ackPacket(): last packet acked. doneACK!\n");
-					bw.close();
-					fw.close();
-					clientSocket.close();
-					endTime = System.nanoTime(); // records end time
+					closeAll();
 					return;
 				}
 				if (base == nextseqnum) {
@@ -193,7 +177,7 @@ public class Client2a extends Client {
 //		}
 	}
 
-	public void resendPackets() throws IOException {
+	public void resendPacket() throws IOException {
 		bw.write("resendPackets(): calling \n");
 		synchronized (lock) {
 			bw.write("resendPackets(): lock object\n");

@@ -1,3 +1,4 @@
+package part1;
 /* Isabella Chan s1330027 */
 
 import java.io.File;

@@ -1,9 +1,11 @@
+/* Isabella Chan s1330027 */
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.ArrayList;
 
 
-public class Client2b extends Client {
+public class Client2b extends AbstractClient {
 	
 	/** 
 	 * Even for part 2b, although you need to be more careful about timeout 
@@ -113,13 +115,8 @@ public class Client2b extends Client {
 				pktsBuffer.remove(idx);
 				timers.remove(idx);
 				if (endFlag==(byte)1 && pktsBuffer.size()==0) { // acking last packet
-					bw.write("ackPacket(): Acked last packet!\n");
 					doneACK = true;
-					bw.write("ackPacket(): doneACK!\n");
-					bw.close();
-					fw.close();
-					clientSocket.close();
-					endTime = System.nanoTime();
+					closeAll();
 					return;
 				}
 				if (rcvSeqNoInt == base) {
@@ -144,7 +141,7 @@ public class Client2b extends Client {
 		}
 	}
 	
-	public void resendPackets() {
+	public void resendPacket() {
 		// not implemented
 	}
 

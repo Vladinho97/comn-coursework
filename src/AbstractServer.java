@@ -1,3 +1,5 @@
+/* Isabella Chan s1330027 */
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.FileOutputStream;
@@ -9,7 +11,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 
-public abstract class Server {
+public abstract class AbstractServer {
 
 	int portNo;
 	String filename;
@@ -30,7 +32,7 @@ public abstract class Server {
 	DatagramPacket ackPacket;
 	int rcvSeqNo, expectedSeqNo = 0; // rcvBase = base number for the receiver window
 
-	public Server(int portNo, String filename) throws IOException {
+	public AbstractServer(int portNo, String filename) throws IOException {
 		this.portNo = portNo;
 		this.filename = filename;
 		this.fw = new FileWriter("output-receiver.txt");
@@ -40,7 +42,7 @@ public abstract class Server {
 	}
 	
 	/** receives a packet and update the datagram receivePacket */
-	public void rcv_packet() throws IOException {
+	public void receivePacket() throws IOException {
 		receivePacket.setLength(1027);
 		serverSocket.setSoTimeout(0);
 		// -------------------- receiving a packet! ----------------------
@@ -59,9 +61,9 @@ public abstract class Server {
 		return;
 	}
 	
-	public abstract void ack_packets() throws IOException;
+	public abstract void ackPacket() throws IOException;
 	
-	public void close_everything() throws IOException {
+	public void closeAll() throws IOException {
 		out.close();
 		serverSocket.close();
 		bw.close();

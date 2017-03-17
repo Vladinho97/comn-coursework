@@ -1,3 +1,5 @@
+/* Isabella Chan s1330027 */
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,7 +11,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 
 
-public class Client {
+public abstract class AbstractClient {
 	
 	Object lock = new Object(); 
 	
@@ -47,7 +49,7 @@ public class Client {
 	boolean isFirstPacket = true;
 	Long startTime = null, endTime = null;
 	
-	public Client(String localhost, int portNo, String filename, int retryTimeout, int windowSize) throws IOException {
+	public AbstractClient(String localhost, int portNo, String filename, int retryTimeout, int windowSize) throws IOException {
 		this.localhost = localhost;
 		this.portNo = portNo;
 		this.filename = filename;
@@ -79,5 +81,18 @@ public class Client {
 		System.out.println("================== Program terminates ==================");
 	}
 		
-
+	public abstract void sendPacket() throws IOException;
+	
+	public abstract void ackPacket() throws IOException;
+	
+	public abstract void resendPacket() throws IOException;
+	
+	public void closeAll() throws IOException {
+		bw.write("ackPacket(): last packet acked. doneACK!\n");
+		bw.close();
+		fw.close();
+		clientSocket.close();
+		endTime = System.nanoTime();
+		return;
+	}
 }
