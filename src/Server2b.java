@@ -21,12 +21,14 @@ public class Server2b extends AbstractServer {
 	@Override
 	public void ackPacket() throws IOException {
 		
+		System.out.println("Trying to ack packet!");
+		
 		receivePacket();
 		
 		// update variables based on received packet
 		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
 		if (rcvSeqNo == expectedSeqNo) {
-			bw.write("rcvSeqNo == expectedSeqNo!\n");
+			System.out.println("rcvSeqNo == expectedSeqNo");
 			window.set(0, receivePacket);
 			for (int i = 0; i < windowSize; i++) {
 				if (window.get(i) == null) 
@@ -42,6 +44,10 @@ public class Server2b extends AbstractServer {
 				expectedSeqNo = (expectedSeqNo+1)%65535;
 				window.set(i, null);
 			}
+			ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+			System.out.print("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
+			serverSocket.send(ackPacket);
+			
 			if (endFlag == (byte)1) {  // TODO: check this! does expected has to be the last packet?? 
 				for (int i = 0; i < windowSize; i++) {
 					if (window.get(i) != null) {
@@ -50,22 +56,24 @@ public class Server2b extends AbstractServer {
 				}
 				if (isDone) {
 					closeAll();
+					System.out.println("done receiving packet! endFlag == 1");
 					return;
 				}
 			}
 		} 
 		else if (rcvSeqNo < expectedSeqNo) { // already ack'd packet, resend ack!
-			bw.write("rcvSeqNo is not >= expectedSeqNo!\n");
+			System.out.println("rcvSeqNo < expectedSeqNo");
 			ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 			serverSocket.send(ackPacket);
 			bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
 			return;		
 		} 
 		else if (rcvSeqNo >= ((expectedSeqNo+windowSize) % 65535)) {
+			System.out.println("rcvSeqNo >= ((expectedSeqNo+windowSize) % 65535)");
 			System.out.println("Severe: Should not reach here!!!");
-			bw.write("received a packet that is bigger than window size??\n");
 		} 
 		else { // packet received is within window
+			System.out.println("Packet received is within window.");
 			bw.write("packet received is within window\n");
 			DatagramPacket currPacket = receivePacket;
 			int idx = rcvSeqNo - expectedSeqNo;

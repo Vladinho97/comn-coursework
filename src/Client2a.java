@@ -162,6 +162,7 @@ public class Client2a extends AbstractClient {
 				bw.write("ackPacket(): update base : "+base+"   |   pktsBuffer.size() : "+pktsBuffer.size()+"\n");
 				if (endFlag==(byte)1 && pktsBuffer.size()==0) { // acked last packet
 					doneACK = true;
+					timer.cancel();
 					closeAll();
 					return;
 				}

@@ -46,6 +46,7 @@ public abstract class AbstractServer {
 		receivePacket.setLength(1027);
 		serverSocket.setSoTimeout(0);
 		// -------------------- receiving a packet! ----------------------
+		System.out.println("Trying to receive packet!");
 		serverSocket.receive(receivePacket);
 		packetSize = receivePacket.getLength();
 		clientPortNo = receivePacket.getPort();
@@ -58,6 +59,7 @@ public abstract class AbstractServer {
 		ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 		ackBuffer[1] = buffer[1];
 		endFlag = buffer[2];
+		System.out.println("Received packet!");
 		return;
 	}
 	

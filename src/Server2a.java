@@ -25,7 +25,7 @@ public class Server2a extends AbstractServer {
 			return;
 		
 		// received packet is the right packet, update variables 
-		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
+//		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
 		bw.write("rcvSeqNo == expectedSeqNo!\n");
 		byte[] currBuff = new byte[packetSize-3]; // to extract image file byte values
 		int currIdx = 0; // index pointer for currBuff
