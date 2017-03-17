@@ -48,6 +48,7 @@ class RcvThread implements Runnable {
 			}
 		}
 		client.printOutputs();
+		System.exit(0);
 		return;
 	}
 }

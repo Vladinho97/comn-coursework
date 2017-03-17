@@ -18,7 +18,9 @@ public class Server2a extends AbstractServer {
 	@Override
 	public void ackPacket() throws IOException {
 		receivePacket();
-		
+
+		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
+
 		if (rcvSeqNo != expectedSeqNo) 
 			return;
 		

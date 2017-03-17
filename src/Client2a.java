@@ -19,11 +19,11 @@ class ResendTask extends TimerTask {
 	@Override
 	public void run() {
 		try {
-			client.bw.write("+++++++++++++++++++++ Running timer task ++++++++++++++++++++++");
+//			client.bw.write("+++++++++++++++++++++ Running timer task ++++++++++++++++++++++");
 			client.resendPacket();
-			client.bw.write("+++++++++++++++++++++ Finish timer task +++++++++++++++++++++++");
+//			client.bw.write("+++++++++++++++++++++ Finish timer task +++++++++++++++++++++++");
 		} catch (IOException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		return;
 	}
