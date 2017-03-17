@@ -5,6 +5,12 @@ import java.net.DatagramPacket;
 import java.util.Timer;
 import java.util.TimerTask;
 
+//mount -t vboxsf dummynetshared /mnt/shared
+//ipfw add pipe 100 in
+//ipfw add pipe 200 out
+//ipfw pipe 100 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
+//ipfw pipe 200 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
+
 class ResendTask extends TimerTask {
 	private Client2a client;
 	public ResendTask(Client2a client) {
