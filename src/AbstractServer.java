@@ -15,8 +15,6 @@ public abstract class AbstractServer {
 
 	int portNo;
 	String filename;
-	FileWriter fw;
-	BufferedWriter bw;
 	
 	// =========== for receiving =============
 	byte[] buffer = new byte[1027];
@@ -30,13 +28,11 @@ public abstract class AbstractServer {
 	// =========== for sending ack's =============
 	byte[] ackBuffer = new byte[2];
 	DatagramPacket ackPacket;
-	int rcvSeqNo, expectedSeqNo = 0; // rcvBase = base number for the receiver window
+	int rcvSeqNo;
 
 	public AbstractServer(int portNo, String filename) throws IOException {
 		this.portNo = portNo;
 		this.filename = filename;
-		this.fw = new FileWriter("output-receiver.txt");
-		this.bw = new BufferedWriter(fw);
 		this.serverSocket = new DatagramSocket(portNo);
 		this.out = new BufferedOutputStream(new FileOutputStream(filename)); // write image to file
 	}
@@ -52,14 +48,10 @@ public abstract class AbstractServer {
 		clientPortNo = receivePacket.getPort();
 		clientIPAddress = receivePacket.getAddress();
 		
-		bw.write("serverSocket : portNo : "+serverSocket.getPort()+"   |   IPAddress : "+serverSocket.getInetAddress()+"\n");
-		bw.write("packet received: packetSize : "+packetSize+"   |   clientPortNo : "+clientPortNo+"   |   clientIPAddress : "+clientIPAddress+"\n");
-
 		rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
 		ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 		ackBuffer[1] = buffer[1];
 		endFlag = buffer[2];
-		System.out.println("Received packet!");
 		return;
 	}
 	
@@ -68,8 +60,6 @@ public abstract class AbstractServer {
 	public void closeAll() throws IOException {
 		out.close();
 		serverSocket.close();
-		bw.close();
-		fw.close();
 		return;
 	}
 

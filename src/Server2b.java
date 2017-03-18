@@ -4,144 +4,236 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.util.ArrayList;
 
-
 public class Server2b extends AbstractServer {
-	int windowSize;
-	ArrayList<DatagramPacket> window = new ArrayList<DatagramPacket>();
+	int windowSize, rcvBase = 0;
+	ArrayList<DatagramPacket> windowBuffer = new ArrayList<DatagramPacket>();
 	
 	public Server2b(int portNo, String filename, int windowSize) throws IOException {
 		super(portNo, filename);
 		this.windowSize = windowSize;
 		for (int i = 0; i < windowSize; i++) {
-			window.add(null);
+			windowBuffer.add(i, null);
 		}
+	}
+
+	/** Checks whether a sequence no. is within the window */
+	public boolean isWithinWindow(int n) {
+		if (n >= rcvBase && n <= (rcvBase+windowSize-1))
+			return true;
+		return false;
+	}
+	/** Checks whether a sequence no. is withint [rcvBase-windowSize, rcvBase-1] */
+	public boolean isBelowWindow(int n) {
+		if (n >= (rcvBase-windowSize) && n <=(rcvBase-1))
+			return true;
+		return false;
 	}
 	
 	boolean isDone = false;
 	@Override
 	public void ackPacket() throws IOException {
 		
-		System.out.println("Trying to ack packet!");
-		
 		receivePacket();
 		
-		// update variables based on received packet
-		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
-		if (rcvSeqNo == expectedSeqNo) {
-			System.out.println("rcvSeqNo == expectedSeqNo");
-			window.set(0, receivePacket);
-			for (int i = 0; i < windowSize; i++) {
-				if (window.get(i) == null) 
-					break;
-				packetSize = window.get(i).getLength();
-				byte[] currBuff = new byte[packetSize-3];
-				int currIdx = 0;
-				for (int j = 3; j < packetSize; j++) {
-					currBuff[currIdx] = buffer[i];
-					currIdx++;
-				}
-				out.write(currBuff);
-				expectedSeqNo = (expectedSeqNo+1)%65535;
-				window.set(i, null);
-			}
+		System.out.println("rcvBase = "+rcvBase
+				+"   |   rcvBase+windowSize-1 = "+(rcvBase+windowSize-1)
+				+"   |   rcvSeqNo = "+rcvSeqNo);
+		
+		if (isWithinWindow(rcvSeqNo)) { // correctly received
+			System.out.println("Is within window, send ackPacket for rcvSeqNo = "+rcvSeqNo);
 			ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
-			System.out.print("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
 			serverSocket.send(ackPacket);
 			
-			if (endFlag == (byte)1) {  // TODO: check this! does expected has to be the last packet?? 
+			// add packet to windowBuffer if not already exists
+			int windowBufferIdx = rcvSeqNo - rcvBase;
+			if (windowBuffer.get(windowBufferIdx) == null) { // if this packet was not previously received
+				System.out.println("ackPacket is new, add to windowBuffer at idx = "+windowBufferIdx);
+				windowBuffer.set(windowBufferIdx, receivePacket);
+			}
+			
+			// write packets to file
+			if (windowBuffer.get(0) != null) { // i.e. rcvSeqNo == rcvBase
+				System.out.println("rcvBase is not null. write packets to file");
+				int endingIdx = 0;
 				for (int i = 0; i < windowSize; i++) {
-					if (window.get(i) != null) {
-						isDone = false;
+					if (windowBuffer.get(i) == null) {
+						endingIdx = i;
+						System.out.println("packet in idx = "+i+" is null. Stop writing packets");
+						break;
 					}
+					// write datagram packet bytes to image file
+					DatagramPacket currPacket = windowBuffer.get(i);
+					byte[] currPacketBuff = currPacket.getData(); // data from current packet
+					byte[] outBuff = new byte[currPacket.getLength()-3]; // output buffer
+					int outIdx = 0;
+					for (int j = 3; j < currPacket.getLength(); j++) {
+						outBuff[outIdx] = currPacketBuff[j]; 
+						outIdx++;
+					}
+					out.write(outBuff);
+					if (currPacketBuff[2] == (byte) 1) { // last packet has been written
+						System.out.println("Wrote last packet! I am so done.");
+						isDone = true;
+					}
+					System.out.println("Wrote one packet! idx = "+i);
+					rcvBase = (rcvBase+1)%65535;
 				}
-				if (isDone) {
-					closeAll();
-					System.out.println("done receiving packet! endFlag == 1");
-					return;
+				
+				// remove packets
+				for (int i = 0; i < endingIdx; i++) {
+					windowBuffer.remove(0);
+					windowBuffer.add(null);
+					System.out.println("windowBuffer.size() = "+windowBuffer.size()); 
 				}
 			}
-		} 
-		else if (rcvSeqNo < expectedSeqNo) { // already ack'd packet, resend ack!
-			System.out.println("rcvSeqNo < expectedSeqNo");
+			return;
+		}
+		
+		if (isBelowWindow(rcvSeqNo)) { // ack must be generated, although this is a packet that the receiver has previously ack'd
+			System.out.println("is below window, resend ack!");
 			ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 			serverSocket.send(ackPacket);
-			bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
-			return;		
-		} 
-		else if (rcvSeqNo >= ((expectedSeqNo+windowSize) % 65535)) {
-			System.out.println("rcvSeqNo >= ((expectedSeqNo+windowSize) % 65535)");
-			System.out.println("Severe: Should not reach here!!!");
-		} 
-		else { // packet received is within window
-			System.out.println("Packet received is within window.");
-			bw.write("packet received is within window\n");
-			DatagramPacket currPacket = receivePacket;
-			int idx = rcvSeqNo - expectedSeqNo;
-			window.set(idx, currPacket);
+			return;
 		}
+		// Otherwise, ignore the packet!
 	}
 	
-//	public void receivePacket() throws IOException {
-//		receivePacket.setLength(1027);
-//		serverSocket.setSoTimeout(0);
-//		// -------------------- receiving a packet! ----------------------
-//		serverSocket.receive(receivePacket);
-//		packetSize = receivePacket.getLength();
-//		clientPortNo = receivePacket.getPort();
-//		clientIPAddress = receivePacket.getAddress();
+//	int windowSize;
+//	ArrayList<DatagramPacket> window = new ArrayList<DatagramPacket>();
+//	
+//	public Server2b(int portNo, String filename, int windowSize) throws IOException {
+//		super(portNo, filename);
+//		this.windowSize = windowSize;
+//		for (int i = 0; i < windowSize; i++) {
+//			window.add(null);
+//		}
+//	}
+//	
+//	boolean isDone = false;
+//	@Override
+//	public void ackPacket() throws IOException {
 //		
-//		bw.write("serverSocket : portNo : "+serverSocket.getPort()+"   |   IPAddress : "+serverSocket.getInetAddress()+"\n");
-//		bw.write("packet received: packetSize : "+packetSize+"   |   clientPortNo : "+clientPortNo+"   |   clientIPAddress : "+clientIPAddress+"\n");
-//
-//		rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
-//		ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
-//		ackBuffer[1] = buffer[1];
-//		endFlag = buffer[2];
+//		System.out.println("Trying to ack packet!");
 //		
-//		if (rcvSeqNo>=rcvBase && rcvSeqNo<((rcvBase+windowSize)%65535)) {
-//			if (rcvSeqNo == rcvBase) {
-//				// send all the ack'd packets up
-//				window.set(0, receivePacket);
-//				for (DatagramPacket pkt : window) { // for each packet, (consequentially) write image
-//					if (pkt == null) 
-//						break;
-//					packetSize = pkt.getLength();
-//					byte[] currBuff = new byte[packetSize-3];
-//					int currIdx = 0;
-//					for (int i = 3; i < packetSize; i++) {
-//						currBuff[currIdx] = buffer[i];
-//						currIdx++;
-//					}
-//					out.write(currBuff);
-//					rcvBase = (rcvBase+1) % 65535;
-//					window.set(window.indexOf(pkt), null);
+//		receivePacket();
+//		
+//		// update variables based on received packet
+//		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
+//		if (rcvSeqNo == expectedSeqNo) {
+//			System.out.println("rcvSeqNo == expectedSeqNo");
+//			window.set(0, receivePacket);
+//			for (int i = 0; i < windowSize; i++) {
+//				if (window.get(i) == null) 
+//					break;
+//				packetSize = window.get(i).getLength();
+//				byte[] currBuff = new byte[packetSize-3];
+//				int currIdx = 0;
+//				for (int j = 3; j < packetSize; j++) {
+//					currBuff[currIdx] = buffer[i];
+//					currIdx++;
 //				}
-//				ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
-//				bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
-//				serverSocket.send(ackPacket); // send ACK to client
-//				bw.write("updated expectedSeqNo : "+rcvBase+"\n");
-//				
-//				if (endFlag == (byte) 1) { // is last packet
-//					out.close();
-//					serverSocket.close();
-//					bw.close();
-//					fw.close();
+//				out.write(currBuff);
+//				expectedSeqNo = (expectedSeqNo+1)%65535;
+//				window.set(i, null);
+//			}
+//			ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+//			System.out.print("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
+//			serverSocket.send(ackPacket);
+//			
+//			if (endFlag == (byte)1) {  // TODO: check this! does expected has to be the last packet?? 
+//				for (int i = 0; i < windowSize; i++) {
+//					if (window.get(i) != null) {
+//						isDone = false;
+//					}
+//				}
+//				if (isDone) {
+//					closeAll();
+//					System.out.println("done receiving packet! endFlag == 1");
 //					return;
 //				}
-//			} else {
-//				DatagramPacket currPacket = receivePacket;
-//				int idx = rcvSeqNo - rcvBase;
-//				window.set(idx, currPacket);
 //			}
-//		} else if (rcvSeqNo < rcvBase){ // already ack'd packet, resend ack!
-//			bw.write("rcvSeqNo is not >= expectedSeqNo!\n");
+//		} 
+//		else if (rcvSeqNo < expectedSeqNo) { // already ack'd packet, resend ack!
+//			System.out.println("rcvSeqNo < expectedSeqNo");
 //			ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 //			serverSocket.send(ackPacket);
 //			bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
-//			return;
-//		} else { // disregard
+//			return;		
+//		} 
+//		else if (rcvSeqNo >= ((expectedSeqNo+windowSize) % 65535)) {
+//			System.out.println("rcvSeqNo >= ((expectedSeqNo+windowSize) % 65535)");
 //			System.out.println("Severe: Should not reach here!!!");
-//			bw.write("received a packet that is bigger than window size??\n");
+//		} 
+//		else { // packet received is within window
+//			System.out.println("Packet received is within window.");
+//			bw.write("packet received is within window\n");
+//			DatagramPacket currPacket = receivePacket;
+//			int idx = rcvSeqNo - expectedSeqNo;
+//			window.set(idx, currPacket);
 //		}
 //	}
+//	
+////	public void receivePacket() throws IOException {
+////		receivePacket.setLength(1027);
+////		serverSocket.setSoTimeout(0);
+////		// -------------------- receiving a packet! ----------------------
+////		serverSocket.receive(receivePacket);
+////		packetSize = receivePacket.getLength();
+////		clientPortNo = receivePacket.getPort();
+////		clientIPAddress = receivePacket.getAddress();
+////		
+////		bw.write("serverSocket : portNo : "+serverSocket.getPort()+"   |   IPAddress : "+serverSocket.getInetAddress()+"\n");
+////		bw.write("packet received: packetSize : "+packetSize+"   |   clientPortNo : "+clientPortNo+"   |   clientIPAddress : "+clientIPAddress+"\n");
+////
+////		rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
+////		ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
+////		ackBuffer[1] = buffer[1];
+////		endFlag = buffer[2];
+////		
+////		if (rcvSeqNo>=rcvBase && rcvSeqNo<((rcvBase+windowSize)%65535)) {
+////			if (rcvSeqNo == rcvBase) {
+////				// send all the ack'd packets up
+////				window.set(0, receivePacket);
+////				for (DatagramPacket pkt : window) { // for each packet, (consequentially) write image
+////					if (pkt == null) 
+////						break;
+////					packetSize = pkt.getLength();
+////					byte[] currBuff = new byte[packetSize-3];
+////					int currIdx = 0;
+////					for (int i = 3; i < packetSize; i++) {
+////						currBuff[currIdx] = buffer[i];
+////						currIdx++;
+////					}
+////					out.write(currBuff);
+////					rcvBase = (rcvBase+1) % 65535;
+////					window.set(window.indexOf(pkt), null);
+////				}
+////				ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+////				bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
+////				serverSocket.send(ackPacket); // send ACK to client
+////				bw.write("updated expectedSeqNo : "+rcvBase+"\n");
+////				
+////				if (endFlag == (byte) 1) { // is last packet
+////					out.close();
+////					serverSocket.close();
+////					bw.close();
+////					fw.close();
+////					return;
+////				}
+////			} else {
+////				DatagramPacket currPacket = receivePacket;
+////				int idx = rcvSeqNo - rcvBase;
+////				window.set(idx, currPacket);
+////			}
+////		} else if (rcvSeqNo < rcvBase){ // already ack'd packet, resend ack!
+////			bw.write("rcvSeqNo is not >= expectedSeqNo!\n");
+////			ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+////			serverSocket.send(ackPacket);
+////			bw.write("send ack packet: rcvseqno : "+rcvSeqNo+"   |   clientIPAddress : "+clientIPAddress+"   |   clientPortNo : "+clientPortNo+"\n");
+////			return;
+////		} else { // disregard
+////			System.out.println("Severe: Should not reach here!!!");
+////			bw.write("received a packet that is bigger than window size??\n");
+////		}
+////	}
 }

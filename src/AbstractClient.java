@@ -1,9 +1,7 @@
 /* Isabella Chan s1330027 */
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -18,10 +16,6 @@ public abstract class AbstractClient {
 	String localhost, filename;
 	int portNo, retryTimeout, windowSize;
 
-	// ================== for logging purpose ============================
-	FileWriter fw;
-	BufferedWriter bw;
-	
 	// ================ variables related to image file ===================
 	byte[] imgBytesArr;
 	int imgBytesArrLen, imgBytesArrIdx = 0;
@@ -56,8 +50,6 @@ public abstract class AbstractClient {
 		this.retryTimeout = retryTimeout;
 		this.windowSize = windowSize;
 		this.IPAddress = InetAddress.getByName(localhost);
-		this.fw = new FileWriter("output-sender.txt");
-		this.bw = new BufferedWriter(fw);
 	}
 
 	/** Opens file and reads bytes into a byte array */
@@ -88,9 +80,6 @@ public abstract class AbstractClient {
 	public abstract void resendPacket() throws IOException;
 	
 	public void closeAll() throws IOException {
-		bw.write("ackPacket(): last packet acked. doneACK!\n");
-		bw.close();
-		fw.close();
 		clientSocket.close();
 		endTime = System.nanoTime();
 		return;

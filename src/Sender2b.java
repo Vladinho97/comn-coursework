@@ -1,6 +1,6 @@
-/* Isabella Chan s1330027 */
-
 import java.io.IOException;
+
+/* Isabella Chan s1330027 */
 
 
 public class Sender2b {
