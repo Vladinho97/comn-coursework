@@ -4,7 +4,7 @@ import java.io.IOException;
 
 
 public class Sender2b {
-	
+
 	public static void main(String[] args) throws IOException {
 
 		// ================ Read arguments ===============
@@ -23,10 +23,12 @@ public class Sender2b {
 
 		Thread rcvtt = new Thread(new RcvThread2b(client2b));
 		Thread sendtt = new Thread(new SendThread2b(client2b));
+		Thread resendtt = new Thread(new ResendThread2b(client2b));
 		rcvtt.start();
 		sendtt.start();
+		resendtt.start();
 	}
-	
+
 }
 
 class RcvThread2b implements Runnable {
@@ -66,3 +68,20 @@ class SendThread2b implements Runnable {
 	}
 }
 
+class ResendThread2b implements Runnable {
+	private Client2b client2b;
+	public ResendThread2b(Client2b client2b) {
+		this.client2b = client2b;
+	}
+	@Override
+	public void run() {
+		while (!client2b.doneACK) {
+			try {
+				client2b.resendPackets();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return;
+	}
+}

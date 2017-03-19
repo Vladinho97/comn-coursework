@@ -110,17 +110,18 @@ public class Client2b extends AbstractClient {
 	@Override
 	public void ackPacket() throws IOException {
 		System.out.println("client: trying to ack!");
-		long oldestTimer = getOldestTimer();
-		int setTimeout;
-		if (oldestTimer == 0) {
-			setTimeout = 0;
-		} else {
-			long rightNow = System.nanoTime();
-			setTimeout = retryTimeout - ((int)(rightNow-oldestTimer));
-		}
-		try {
+		// long oldestTimer = getOldestTimer();
+		// int setTimeout;
+		// if (oldestTimer == 0) {
+		// 	setTimeout = 0;
+		// } else {
+		// 	long rightNow = System.nanoTime();
+		// 	setTimeout = retryTimeout - ((int)(rightNow-oldestTimer));
+		// }
+		// try {
 			rcvPacket.setLength(2);
-			clientSocket.setSoTimeout(setTimeout);
+			// clientSocket.setSoTimeout(setTimeout);
+			clientSocket.setSoTimeout(0);
 			clientSocket.receive(rcvPacket);
 			ackBuffer = rcvPacket.getData();
 			rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
@@ -202,48 +203,64 @@ public class Client2b extends AbstractClient {
 				}
 				System.out.println();
 			}
-		} catch (SocketTimeoutException e) {
-			System.out.println("+++++++++++++++++++++++++++ Time out occur!!!+++++++++++++++++++++");
-			for (int i = 0; i < timerBuffer.size(); i++) {
-				if (timerBuffer.get(i) != null && timerBuffer.get(i) == oldestTimer) {
-					clientSocket.send(pktsBuffer.get(i));
-					timerBuffer.set(i, System.currentTimeMillis());
-					DatagramPacket currPkt = pktsBuffer.get(i);
-					byte[] data = currPkt.getData();
-					int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
-					System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++resent a packet with seq no = "+currSeqNo);
-				} else if (timerBuffer.get(i) != null && (System.nanoTime()-timerBuffer.get(i)) >= retryTimeout) {
-					clientSocket.send(pktsBuffer.get(i));
-					timerBuffer.set(i, System.currentTimeMillis());
-					DatagramPacket currPkt = pktsBuffer.get(i);
-					byte[] data = currPkt.getData();
-					int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
-					System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++resent a packet with seq no = "+currSeqNo);
-				}
-			}
-		}
+		// }
+		// catch (SocketTimeoutException e) {
+		// 	System.out.println("+++++++++++++++++++++++++++ Time out occur!!!+++++++++++++++++++++");
+		// 	for (int i = 0; i < timerBuffer.size(); i++) {
+		// 		if (timerBuffer.get(i) != null && timerBuffer.get(i) == oldestTimer) {
+		// 			clientSocket.send(pktsBuffer.get(i));
+		// 			timerBuffer.set(i, System.currentTimeMillis());
+		// 			DatagramPacket currPkt = pktsBuffer.get(i);
+		// 			byte[] data = currPkt.getData();
+		// 			int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
+		// 			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++resent a packet with seq no = "+currSeqNo);
+		// 		} else if (timerBuffer.get(i) != null && (System.nanoTime()-timerBuffer.get(i)) >= retryTimeout) {
+		// 			clientSocket.send(pktsBuffer.get(i));
+		// 			timerBuffer.set(i, System.currentTimeMillis());
+		// 			DatagramPacket currPkt = pktsBuffer.get(i);
+		// 			byte[] data = currPkt.getData();
+		// 			int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
+		// 			System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++resent a packet with seq no = "+currSeqNo);
+		// 		}
+		// 	}
+		// }
 	}
 
-	public long getOldestTimer() throws IOException {
-		long oldest = 0;
-		synchronized (lock) {
-			for (int i = 0; i < timerBuffer.size(); i++) {
-				long currTimer;
-				if (timerBuffer.get(i) != (Long) null) {
-					currTimer = timerBuffer.get(i);
-					long now = System.nanoTime();
-					if (now-currTimer >= retryTimeout) {
-						clientSocket.send(pktsBuffer.get(i));
-						timerBuffer.set(i, now);
-						System.out.println("resend a packet");
-					} else if (currTimer <= oldest){
-						oldest = currTimer;
+	// public long getOldestTimer() throws IOException {
+	// 	long oldest = 0;
+	// 	synchronized (lock) {
+	// 		for (int i = 0; i < timerBuffer.size(); i++) {
+	// 			long currTimer;
+	// 			if (timerBuffer.get(i) != (Long) null) {
+	// 				currTimer = timerBuffer.get(i);
+	// 				long now = System.nanoTime();
+	// 				if (now-currTimer >= retryTimeout) {
+	// 					clientSocket.send(pktsBuffer.get(i));
+	// 					timerBuffer.set(i, now);
+	// 					System.out.println("resend a packet");
+	// 				} else if (currTimer <= oldest){
+	// 					oldest = currTimer;
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	return oldest;
+	// }
+
+	public void resendPackets() throws IOException {
+			synchronized (lock) {
+				for (int i = 0; i < timerBuffer.size(); i++) {
+					if (timerBuffer.get(i) != (Long) null) {
+						if (System.nanoTime()-timerBuffer.get(i) >= retryTimeout) {
+								clientSocket.send(pktsBuffer.get(i));
+								timerBuffer.set(i, System.nanoTime());
+								// System.out.println("RESEND!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1");
+						}
 					}
 				}
 			}
-		}
-		return oldest;
 	}
+
 	// public long getOldestTimer() throws IOException {
 	// 	// synchronized (lock) {
 	// 		long oldest = 0;
