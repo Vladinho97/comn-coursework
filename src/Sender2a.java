@@ -25,11 +25,11 @@ public class Sender2a {
 		int retryTimeout = Integer.parseInt(args[3]);
 		int windowSize = Integer.parseInt(args[4]);
 
-		Client2a client = new Client2a(localhost, portNo, filename, retryTimeout, windowSize);
-		client.openFile(); // opens image file
+		Client2a client2a = new Client2a(localhost, portNo, filename, retryTimeout, windowSize);
+		client2a.openFile(); // opens image file
 
-		Thread rcvtt = new Thread(new RcvThread(client));
-		Thread sendtt = new Thread(new SendThread(client));
+		Thread rcvtt = new Thread(new RcvThread(client2a));
+		Thread sendtt = new Thread(new SendThread(client2a));
 		rcvtt.start();
 		sendtt.start();
 	}

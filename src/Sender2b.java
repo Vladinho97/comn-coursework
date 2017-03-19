@@ -21,9 +21,12 @@ public class Sender2b {
 		Client2b client2b = new Client2b(localhost, portNo, filename, retryTimeout, windowSize);
 		client2b.openFile(); // opens image file
 
+		// ------------------------ creates threads ------------------------------
 		Thread rcvtt = new Thread(new RcvThread2b(client2b));
 		Thread sendtt = new Thread(new SendThread2b(client2b));
 		Thread resendtt = new Thread(new ResendThread2b(client2b));
+		
+		// --------------------------- run threads --------------------------------
 		rcvtt.start();
 		sendtt.start();
 		resendtt.start();

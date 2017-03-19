@@ -30,10 +30,12 @@ public abstract class AbstractClient {
 	byte endFlag = (byte) 0; // last packet flag
 	int attempt = 0; // no. of attempts to send the last packet TODO: do i need this?
 	
-	// ================== variabl related to receiving packets ============
+	// ================== variables related to receiving packets ============
 	byte[] ackBuffer = new byte[2]; // ACK value from rcvPacket stored here
 	DatagramPacket rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
 	int lastSeqNo, rcvSeqNoInt; // received seqno in interger
+	
+	boolean doneSEND = false, doneACK = false; // flags to terminate sending and acking
 	
 	// ========================= Program outputs ==========================
 	double fileSizeKB, throughput, estimatedTimeInSec;

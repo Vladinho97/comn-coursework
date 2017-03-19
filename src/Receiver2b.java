@@ -15,9 +15,8 @@ public class Receiver2b {
 		
 		Server2b server2b = new Server2b(portNo, filename, windowSize);
 		
-		while (!server2b.isDone) {
+		while (!server2b.doneACK) {
 			server2b.ackPacket();
 		}
 	}
-	
 }

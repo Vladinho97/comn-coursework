@@ -38,7 +38,7 @@ public class Client2a extends AbstractClient {
 		super(localhost, portNo, filename, retryTimeout, windowSize);
 	}
 
-	boolean doneSEND = false; 
+//	boolean doneSEND = false; 
 	/** Client only sends if there are bytes left in file and there is space in the window */
 	public void sendPacket() throws IOException {
 		if (imgBytesArrIdx >= imgBytesArrLen) {
@@ -73,7 +73,7 @@ public class Client2a extends AbstractClient {
 		}
 	}
 
-	boolean doneACK = false;
+//	boolean doneACK = false;
 	/** Tries to receive a packet (with sequence no = base) and ack it. */
 	public void ackPacket() throws IOException {
 		rcvPacket.setLength(2);
@@ -84,7 +84,6 @@ public class Client2a extends AbstractClient {
 //			System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
 		
 		synchronized (lock) {
-			
 			if (rcvSeqNoInt < base) 
 				return;
 			
@@ -111,7 +110,6 @@ public class Client2a extends AbstractClient {
 				timer.schedule(new ResendTask(this), retryTimeout);
 //			System.out.println("base != nextseqnum. Schedule new timer");
 			}
-				
 		}
 	}
 

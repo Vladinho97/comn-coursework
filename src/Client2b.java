@@ -6,6 +6,13 @@ import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Timer;
 
+/** Dummynet configuration
+mount -t vboxsf dummynetshared /mnt/shared
+ipfw add pipe 100 in
+ipfw add pipe 200 out
+ipfw pipe 100 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
+ipfw pipe 200 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
+*/
 
 public class Client2b extends AbstractClient {
 
@@ -56,7 +63,7 @@ public class Client2b extends AbstractClient {
 		System.out.println();
 	}
 
-	boolean doneSEND = false;
+//	boolean doneSEND = false;
 	@Override
 	public void sendPacket() throws IOException {
 		// System.out.println("sendPacket(): nextseqnum = "+nextseqnum);
@@ -91,7 +98,7 @@ public class Client2b extends AbstractClient {
 		}
 	}
 	
-	boolean doneACK = false;
+//	boolean doneACK = false;
 	@Override
 	public void ackPacket() throws IOException {
 		rcvPacket.setLength(2);
@@ -99,11 +106,9 @@ public class Client2b extends AbstractClient {
 		clientSocket.receive(rcvPacket);
 		ackBuffer = rcvPacket.getData();
 		rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-
 //		System.out.println("received a packet! base = "+base+"   |   base+N-1 = "+(base+windowSize-1)+"   |   nextSeqNoInt = "+nextseqnum+"   |   rcvSeqNoInt = "+rcvSeqNoInt);
 
 		synchronized (lock) {
-			
 			if (!isWithinSent(rcvSeqNoInt)) {
 //				System.out.println("received packet not within sent?");
 				return;
