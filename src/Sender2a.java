@@ -36,35 +36,35 @@ public class Sender2a {
 }
 
 class RcvThread implements Runnable {
-	private Client2a client;
-	public RcvThread(Client2a client) {
-		this.client = client;
+	private Client2a client2a;
+	public RcvThread(Client2a client2a) {
+		this.client2a = client2a;
 	}
 	@Override
 	public void run() {
-		while (!client.doneACK) {
+		while (!client2a.doneACK) {
 			try {
-				client.ackPacket();
+				client2a.ackPacket();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
-		client.printOutputs();
+		client2a.printOutputs();
 		System.exit(0);
 		return;
 	}
 }
 
 class SendThread implements Runnable {
-	private Client2a client;
-	public SendThread(Client2a client) {
-		this.client = client;
+	private Client2a client2a;
+	public SendThread(Client2a client2a) {
+		this.client2a = client2a;
 	}
 	@Override
 	public void run() {
-		while (!client.doneSEND) {
+		while (!client2a.doneSEND) {
 			try {
-				client.sendPacket();
+				client2a.sendPacket();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

@@ -8,7 +8,6 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
 
-
 public abstract class AbstractClient {
 	
 	Object lock = new Object(); 
@@ -17,7 +16,7 @@ public abstract class AbstractClient {
 	int portNo, retryTimeout, windowSize;
 
 	// ================ variables related to image file ===================
-	byte[] imgBytesArr;
+	byte[] imgBytesArr; // byte array to store all bytes from a file
 	int imgBytesArrLen, imgBytesArrIdx = 0;
 
 	// ================== variables related to client socket ==============
@@ -34,7 +33,7 @@ public abstract class AbstractClient {
 	// ================== variabl related to receiving packets ============
 	byte[] ackBuffer = new byte[2]; // ACK value from rcvPacket stored here
 	DatagramPacket rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
-	int rcvSeqNoInt; // received seqno in interger
+	int lastSeqNo, rcvSeqNoInt; // received seqno in interger
 	
 	// ========================= Program outputs ==========================
 	double fileSizeKB, throughput, estimatedTimeInSec;
@@ -63,22 +62,43 @@ public abstract class AbstractClient {
 		fis.close();
 	}
 	
-	public void printOutputs() {
-		System.out.println("================== Part2a: output ==================");
-		System.out.println("No of retransmission = "+noOfRetransmission);
-		estimatedTimeInNano = endTime - startTime; 
-		estimatedTimeInSec = ((double)estimatedTimeInNano)/1000000000.0; // convert from nano-sec to sec
-		throughput = fileSizeKB/estimatedTimeInSec;
-		System.out.println("Throughput = "+throughput);
-		System.out.println("================== Program terminates ==================");
-	}
+	public void createPacket() {
+		int packetIdx = 3;
+		int packetSize;
+		byte[] buffer;
+		if ((imgBytesArrLen - imgBytesArrIdx) >= 1024) {
+			packetSize = 1027;
+			buffer = new byte[packetSize];
+			if ((imgBytesArrLen - imgBytesArrIdx) == 1024)	endFlag = (byte) 1;
+			else	endFlag = (byte) 0;
+		} else {
+			packetSize = 3+imgBytesArrLen - imgBytesArrIdx; // last packet
+			buffer = new byte[packetSize];
+			endFlag = (byte) 1;
+		}
 		
+		if (endFlag == (byte) 1) 
+			lastSeqNo = seqNoInt;
+
+		buffer[0] = (byte) (seqNoInt >>> 8); // store sequence no. value as two byte values
+		buffer[1] = (byte) seqNoInt;
+		buffer[2] = endFlag;
+
+		while (packetIdx < packetSize) { // write imgBytesArr byte values into packet
+			buffer[packetIdx] = imgBytesArr[imgBytesArrIdx];
+			packetIdx++;
+			imgBytesArrIdx++;
+		}
+	}
+	
 	public abstract void sendPacket() throws IOException;
 	
 	public abstract void ackPacket() throws IOException;
 	
-	public abstract void resendPacket() throws IOException;
+	public abstract void resendPackets() throws IOException;
 	
+	public abstract void printOutputs();
+
 	public void closeAll() throws IOException {
 		clientSocket.close();
 		endTime = System.nanoTime();
