@@ -71,33 +71,8 @@ public class Client2b extends AbstractClient {
 //			System.out.println("sendPacket(): base = "+base+"   |   base+N-1 = "+(base+windowSize-1)+"   |   nextseqnum = "+nextseqnum);
 			seqNoInt = incre % 65535;
 			incre++;
-			// ------------------------------ create new packet --------------------------------
-			int packetIdx = 3;
-			int packetSize;
-			byte[] buffer;
-			if ((imgBytesArrLen - imgBytesArrIdx) >= 1024) {
-				packetSize = 1027;
-				buffer = new byte[packetSize];
-				if ((imgBytesArrLen - imgBytesArrIdx) == 1024)	endFlag = (byte) 1;
-				else	endFlag = (byte) 0;
-			} else {
-				packetSize = 3+imgBytesArrLen - imgBytesArrIdx; // last packet
-				buffer = new byte[packetSize];
-				endFlag = (byte) 1;
-			}
 			
-			if (endFlag == (byte) 1) 
-				lastSeqNo = seqNoInt;
-
-			buffer[0] = (byte) (seqNoInt >>> 8); // store sequence no. value as two byte values
-			buffer[1] = (byte) seqNoInt;
-			buffer[2] = endFlag;
-
-			while (packetIdx < packetSize) { // write imgBytesArr byte values into packet
-				buffer[packetIdx] = imgBytesArr[imgBytesArrIdx];
-				packetIdx++;
-				imgBytesArrIdx++;
-			}
+			byte[] buffer = createPacket(); // create new packet 
 			// ------------------------------ send the packet --------------------------------
 			sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 			clientSocket.send(sendPacket);
@@ -120,18 +95,15 @@ public class Client2b extends AbstractClient {
 	@Override
 	public void ackPacket() throws IOException {
 		rcvPacket.setLength(2);
-		// clientSocket.setSoTimeout(setTimeout);
 		clientSocket.setSoTimeout(0);
 		clientSocket.receive(rcvPacket);
 		ackBuffer = rcvPacket.getData();
 		rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
 
-//		System.out.println("received a packet! base = "+base
-//		+"   |   base+N-1 = "+(base+windowSize-1)
-//		+"   |   nextSeqNoInt = "+nextseqnum
-//		+"   |   rcvSeqNoInt = "+rcvSeqNoInt);
+//		System.out.println("received a packet! base = "+base+"   |   base+N-1 = "+(base+windowSize-1)+"   |   nextSeqNoInt = "+nextseqnum+"   |   rcvSeqNoInt = "+rcvSeqNoInt);
 
 		synchronized (lock) {
+			
 			if (!isWithinSent(rcvSeqNoInt)) {
 //				System.out.println("received packet not within sent?");
 				return;
@@ -175,10 +147,7 @@ public class Client2b extends AbstractClient {
 					timersBuffer.remove(0);
 					timersBuffer.add(null);
 				}
-//				System.out.println("window slided! base = "+base
-//				+"   |   base+N-1 = "+(base+windowSize-1)
-//				+"   |   nextSeqNoInt = "+nextseqnum
-//				+"   |   rcvSeqNoInt = "+rcvSeqNoInt);
+//				System.out.println("window slided! base = "+base+"   |   base+N-1 = "+(base+windowSize-1)+"   |   nextSeqNoInt = "+nextseqnum+"   |   rcvSeqNoInt = "+rcvSeqNoInt);
 			}
 //			printPktsBuffer();
 		}
@@ -199,6 +168,12 @@ public class Client2b extends AbstractClient {
 		
 	@Override
 	public void printOutputs() {
-		System.out.println("I am outputs");
+		System.out.println("================== Part2b: output ==================");
+//		System.out.println("No of retransmission = "+noOfRetransmission);
+//		estimatedTimeInNano = endTime - startTime; 
+//		estimatedTimeInSec = ((double)estimatedTimeInNano)/1000000000.0; // convert from nano-sec to sec
+//		throughput = fileSizeKB/estimatedTimeInSec;
+//		System.out.println("Throughput = "+throughput);
+		System.out.println("================== Program terminates ==================");
 	}
 }

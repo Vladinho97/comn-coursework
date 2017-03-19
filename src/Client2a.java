@@ -51,33 +51,9 @@ public class Client2a extends AbstractClient {
 		synchronized (lock) {
 			seqNoInt = incre % 65535;
 			incre++;
-			// ------------------------------ create new packet --------------------------------
-			int packetIdx = 3;
-			int packetSize;
-			byte[] buffer;
-			if ((imgBytesArrLen - imgBytesArrIdx) >= 1024) {
-				packetSize = 1027;
-				buffer = new byte[packetSize];
-				if ((imgBytesArrLen - imgBytesArrIdx) == 1024)	endFlag = (byte) 1;
-				else	endFlag = (byte) 0;
-			} else {
-				packetSize = 3+imgBytesArrLen - imgBytesArrIdx; // last packet
-				buffer = new byte[packetSize];
-				endFlag = (byte) 1;
-			}
-
-			if (endFlag == (byte)1)
-				lastSeqNo = seqNoInt; // store sequence no for final packet for acking purpose
 			
-			buffer[0] = (byte) (seqNoInt >>> 8); // store sequence no. value as two byte values
-			buffer[1] = (byte) seqNoInt;
-			buffer[2] = endFlag;
+			byte[] buffer = createPacket(); // create new packet 
 			
-			while (packetIdx < packetSize) { // write imgBytesArr byte values into packet
-				buffer[packetIdx] = imgBytesArr[imgBytesArrIdx];
-				packetIdx++;
-				imgBytesArrIdx++;
-			}
 			// ------------------------------ send the packet --------------------------------
 			sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 			clientSocket.send(sendPacket);
@@ -106,6 +82,7 @@ public class Client2a extends AbstractClient {
 		ackBuffer = rcvPacket.getData();
 		rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
 //			System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
+		
 		synchronized (lock) {
 			
 			if (rcvSeqNoInt < base) 
