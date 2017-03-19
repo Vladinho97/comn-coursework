@@ -1,5 +1,11 @@
-/AbstractServer.class
 /AbstractClient.class
-/part1/
+/AbstractServer.class
+/Client2a.class
+/Client2b.class
 /RcvThread2b.class
+/Receiver2b.class
 /SendThread2b.class
+/Sender2b.class
+/Server2a.class
+/Server2b.class
+/part1/

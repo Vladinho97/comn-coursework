@@ -8,10 +8,10 @@ import java.util.Timer;
 
 
 public class Client2b extends AbstractClient {
-	
+
 	private ArrayList<Long> timerBuffer = new ArrayList<Long>();
 	private int lastSeqNo;
-	
+
 	public Client2b(String localhost, int portNo, String filename, int retryTimeout, int windowSize) throws IOException {
 		super(localhost, portNo, filename, retryTimeout, windowSize);
 		for (int i = 0; i < windowSize; i++) {
@@ -19,7 +19,7 @@ public class Client2b extends AbstractClient {
 			timerBuffer.add(null);
 		}
 	}
-	
+
 	/** Checks whether a sequence no. is within the window */
 	public boolean isWithinWindow(int n) {
 		if (n >= base && n <= (base+windowSize-1))
@@ -27,9 +27,17 @@ public class Client2b extends AbstractClient {
 		return false;
 	}
 
+	/** Checks whether the seq no is one of the sequence no. that has been sent */
+	public boolean isWithinSent(int n) {
+		if (n >= base && n < nextseqnum)
+			return true;
+		return false;
+	}
+
 	boolean doneSEND;
 	@Override
 	public void sendPacket() throws IOException {
+		// System.out.println("sendPacket(): nextseqnum = "+nextseqnum);
 		if (imgBytesArrIdx >= imgBytesArrLen) {
 			doneSEND = true;
 			return;
@@ -38,10 +46,12 @@ public class Client2b extends AbstractClient {
 			return;
 		}
 		synchronized (lock) {
+			System.out.println("sendPacket(): base = "+base+"   |   base+N-1 = "+(base+windowSize-1)+"   |   nextseqnum = "+nextseqnum);
 			seqNoInt = incre % 65535;
 			incre++;
 			// ------------------------------ create new packet --------------------------------
-			int packetIdx = 3, packetSize;
+			int packetIdx = 3;
+			int packetSize;
 			byte[] buffer;
 			if ((imgBytesArrLen - imgBytesArrIdx) >= 1024) {
 				packetSize = 1027;
@@ -56,11 +66,11 @@ public class Client2b extends AbstractClient {
 			buffer[0] = (byte) (seqNoInt >>> 8); // store sequence no. value as two byte values
 			buffer[1] = (byte) seqNoInt;
 			buffer[2] = endFlag;
-			
+
 			if (endFlag == (byte) 1) {
 				lastSeqNo = seqNoInt;
 			}
-			
+
 			while (packetIdx < packetSize) { // write imgBytesArr byte values into packet
 				buffer[packetIdx] = imgBytesArr[imgBytesArrIdx];
 				packetIdx++;
@@ -69,144 +79,218 @@ public class Client2b extends AbstractClient {
 			// ------------------------------ send the packet --------------------------------
 			sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 			clientSocket.send(sendPacket);
+			long currTime = System.nanoTime();
 			// is this first packet?
 			if (isFirstPacket) {
-				startTime = System.currentTimeMillis();
+				startTime = currTime;
 				isFirstPacket = false;
 			}
 			// ------------------------------ update values --------------------------------
-//			if (base == nextseqnum) { // if no unAck'd packets
-//				
-//			}
 			nextseqnum = (nextseqnum+1) % 65535; // increment next available sequence no
 			pktsBuffer.set(seqNoInt-base, sendPacket); // add sent packet to packets buffer
-			timerBuffer.set(seqNoInt-base, System.currentTimeMillis());
+			timerBuffer.set(seqNoInt-base, currTime);
+			// printing outputs
+			System.out.println("Send packet with sequence no = "+seqNoInt+"   |   nextseqnum = "+nextseqnum);
+			System.out.println("current pktsBuffer: ");
+			for (int i = 0; i < pktsBuffer.size(); i++) {
+				DatagramPacket currPkt = pktsBuffer.get(i);
+				if (currPkt == null) {
+					System.out.print("[   ]   ");
+				} else {
+					byte[] data = currPkt.getData();
+					int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
+					System.out.print("["+currSeqNo+"]   ");
+				}
+			}
+			System.out.println();
 		}
 	}
 
 	boolean doneACK = false;
 	@Override
 	public void ackPacket() throws IOException {
-		
-		int oldestTimer = getOldestTimer();
-		int setTimeout = 0;
+		System.out.println("client: trying to ack!");
+		long oldestTimer = getOldestTimer();
+		int setTimeout;
 		if (oldestTimer == 0) {
-			// no timer has been set?
-			System.out.println("oldestTimer == 0... no timer has been set.. should this even occur???");
+			setTimeout = 0;
 		} else {
-			System.out.println("Found one oldest timer!");
-			setTimeout = retryTimeout - oldestTimer;
+			long rightNow = System.nanoTime();
+			setTimeout = retryTimeout - ((int)(rightNow-oldestTimer));
 		}
-		
 		try {
 			rcvPacket.setLength(2);
 			clientSocket.setSoTimeout(setTimeout);
 			clientSocket.receive(rcvPacket);
 			ackBuffer = rcvPacket.getData();
 			rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-			
-			System.out.println("base = "+base+"   |   rcvSeqNoInt = "+rcvSeqNoInt+"   |   nextSeqNoInt = "+nextseqnum+"   |   base+windowSize-1 = "+(base+windowSize-1));
-			
+
+			System.out.println("received a packet! base = "+base
+			+"   |   base+N-1 = "+(base+windowSize-1)
+			+"   |   nextSeqNoInt = "+nextseqnum
+			+"   |   rcvSeqNoInt = "+rcvSeqNoInt);
+
 			synchronized (lock) {
-				if (!isWithinWindow(rcvSeqNoInt)) {
-					System.out.println("received packet not within window wtf?");
-					return; 
+				if (!isWithinSent(rcvSeqNoInt)) {
+					System.out.println("received packet not within sent wtf?");
+					return;
 				}
-				
+
 				int idx = rcvSeqNoInt-base;
 				if (pktsBuffer.get(idx) != null) { // packet not yet been ack
 					System.out.println("this packet has not been ack. Now ack it");
 					pktsBuffer.set(idx, null);
 					timerBuffer.set(idx, null);
 				}
-				
+				System.out.println("current pktsBuffer: ");
+				for (int i = 0; i < pktsBuffer.size(); i++) {
+					DatagramPacket currPkt = pktsBuffer.get(i);
+					if (currPkt == null) {
+						System.out.print("[   ]   ");
+					} else {
+						byte[] data = currPkt.getData();
+						int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
+						System.out.print("["+currSeqNo+"]   ");
+					}
+				}
+				System.out.println();
+
 				if (pktsBuffer.get(0) == null) { // move sliding window
 					int endingIdx = 0;
 					System.out.println("base is now null. base = "+base);
 					for (int i = 0; i < pktsBuffer.size(); i++) {
 						if (pktsBuffer.get(i) != null) {
 							endingIdx = i;
+							System.out.println("pktsBuffer.get("+i+") != null. endingIdx = "+i);
 							break;
 						}
-						System.out.println("increment base = "+base);
-						base = (base+1)%65535;
+						if (base == nextseqnum) {
+							endingIdx = i;
+							System.out.println("base == nextseqnum: base = "+base+"   |   nextseqnum = "+nextseqnum);
+							break;
+						}
 						if (endFlag == (byte)1 && base == lastSeqNo) {
 							doneACK = true;
+							endTime = System.nanoTime();
+							return;
 						}
+						base = (base+1) % 65535;
+						System.out.println("incremented base = "+base);
 					}
-					System.out.println("slide the window");
+					System.out.println("slide the window! endingIdx = "+endingIdx);
 					for (int i = 0; i < endingIdx; i++) {
-						pktsBuffer.remove(i);
+						pktsBuffer.remove(0);
 						pktsBuffer.add(null);
-						timerBuffer.remove(i);
+						timerBuffer.remove(0);
 						timerBuffer.add(null);
 					}
+					System.out.println("window slided! base = "+base
+					+"   |   base+N-1 = "+(base+windowSize-1)
+					+"   |   nextSeqNoInt = "+nextseqnum
+					+"   |   rcvSeqNoInt = "+rcvSeqNoInt);
 				}
+				System.out.println("current pktsBuffer: ");
+				for (int i = 0; i < pktsBuffer.size(); i++) {
+					DatagramPacket currPkt = pktsBuffer.get(i);
+					if (currPkt == null) {
+						System.out.print("[   ]   ");
+					} else {
+						byte[] data = currPkt.getData();
+						int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
+						System.out.print("["+currSeqNo+"]   ");
+					}
+				}
+				System.out.println();
 			}
 		} catch (SocketTimeoutException e) {
-			System.out.println("Time out occur!!!");
+			System.out.println("+++++++++++++++++++++++++++ Time out occur!!!+++++++++++++++++++++");
 			for (int i = 0; i < timerBuffer.size(); i++) {
-				if (timerBuffer.get(i) == oldestTimer) {
+				if (timerBuffer.get(i) != null && timerBuffer.get(i) == oldestTimer) {
 					clientSocket.send(pktsBuffer.get(i));
 					timerBuffer.set(i, System.currentTimeMillis());
-					System.out.println("resend pkt for idx = "+i+" and reset timer.");
+					DatagramPacket currPkt = pktsBuffer.get(i);
+					byte[] data = currPkt.getData();
+					int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
+					System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++resent a packet with seq no = "+currSeqNo);
+				} else if (timerBuffer.get(i) != null && (System.nanoTime()-timerBuffer.get(i)) >= retryTimeout) {
+					clientSocket.send(pktsBuffer.get(i));
+					timerBuffer.set(i, System.currentTimeMillis());
+					DatagramPacket currPkt = pktsBuffer.get(i);
+					byte[] data = currPkt.getData();
+					int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
+					System.out.println("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++resent a packet with seq no = "+currSeqNo);
 				}
 			}
 		}
 	}
 
-	public int getOldestTimer() throws IOException {
+	public long getOldestTimer() throws IOException {
+		long oldest = 0;
 		synchronized (lock) {
-			long oldest = 0;
 			for (int i = 0; i < timerBuffer.size(); i++) {
-				if (timerBuffer.get(i) != null && (System.currentTimeMillis()-timerBuffer.get(i)) >= retryTimeout) {
-					System.out.println("current timer in buffer time out! resend packet");
-					clientSocket.send(pktsBuffer.get(i));
-					timerBuffer.set(i, System.currentTimeMillis());
-				}
-				else if (timerBuffer.get(i) != null && timerBuffer.get(i) >= oldest) {
-						oldest = timerBuffer.get(i);
+				long currTimer;
+				if (timerBuffer.get(i) != (Long) null) {
+					currTimer = timerBuffer.get(i);
+					long now = System.nanoTime();
+					if (now-currTimer >= retryTimeout) {
+						clientSocket.send(pktsBuffer.get(i));
+						timerBuffer.set(i, now);
+						System.out.println("resend a packet");
+					} else if (currTimer <= oldest){
+						oldest = currTimer;
+					}
 				}
 			}
-			int	oldestInt = (int) oldest;
-			return oldestInt;
 		}
+		return oldest;
 	}
-	
+	// public long getOldestTimer() throws IOException {
+	// 	// synchronized (lock) {
+	// 		long oldest = 0;
+	// 		for (int i = 0; i < timerBuffer.size(); i++) {
+	// 			if (timerBuffer.get(i) != null && (System.currentTimeMillis()-timerBuffer.get(i)) >= retryTimeout) {
+	// 				System.out.println("current timer in buffer time out! resend packet");
+	// 				clientSocket.send(pktsBuffer.get(i));
+	// 				timerBuffer.set(i, System.currentTimeMillis());
+	// 				DatagramPacket currPkt = pktsBuffer.get(i);
+	// 				byte[] data = currPkt.getData();
+	// 				int currSeqNo = (((data[0] & 0xff) << 8) | (data[1] & 0xff)); // received packet's sequence no.
+	// 				System.out.println("resent a packet with seq no = "+currSeqNo);
+	// 			}
+	// 			else if (timerBuffer.get(i) != null && timerBuffer.get(i) >= oldest) {
+	// 					oldest = timerBuffer.get(i);
+	// 			}
+	// 		}
+	// 		// int	oldestInt = (int) oldest;
+	// 		System.out.println("oldest (long) = "+oldest);
+	// 		return oldest;
+	// 	// }
+	// }
+
 	@Override
 	public void resendPacket() throws IOException {
-//		synchronized (lock) {
-//			for (int i = 0; i < timerBuffer.size(); i++) {
-//				Long timerTime = timerBuffer.get(i);
-//				if (timerTime != null && (System.nanoTime() - timerTime) >= retryTimeout) {
-//					System.out.println("Timeout occured for packet at pktsBuffer with idx = "+i);
-//					DatagramPacket currPacket = pktsBuffer.get(i);
-//					clientSocket.send(currPacket);
-//					System.out.println("resend the packet!");
-//				}
-//			}
-//		}
+
 	}
-	
-	
-//	/** 
-//	 * Even for part 2b, although you need to be more careful about timeout 
-//	 * check for each packet, multi-threading is not absolutely necessary. 
-//	 * The trick is when a (retransmitted) packet is sent, the absolute time 
-//	 * that the packet was sent should be recorded. Then, before the sender 
-//	 * calls recvfrom(), it should scan the sent times for all unacked packets, 
-//	 * find out the timestamp of the oldest unacked packet and calls 
-//	 * setSoTimeout() by adjusting (computing) the timeout value based on the 
+
+
+//	/**
+//	 * Even for part 2b, although you need to be more careful about timeout
+//	 * check for each packet, multi-threading is not absolutely necessary.
+//	 * The trick is when a (retransmitted) packet is sent, the absolute time
+//	 * that the packet was sent should be recorded. Then, before the sender
+//	 * calls recvfrom(), it should scan the sent times for all unacked packets,
+//	 * find out the timestamp of the oldest unacked packet and calls
+//	 * setSoTimeout() by adjusting (computing) the timeout value based on the
 //	 * timestamp and the current time.
 //	 */
 //
 //	private ArrayList<Long> timers = new ArrayList<Long>(); // a timer for each packet
-//	
+//
 //	public Client2b(String localhost, int portNo, String filename,
 //			int retryTimeout, int windowSize) throws IOException {
 //		super(localhost, portNo, filename, retryTimeout, windowSize);
 //	}
-//	
+//
 //	boolean doneSEND = false;
 //	public void sendPacket() throws IOException {
 //		if (imgBytesArrIdx >= imgBytesArrLen) {
@@ -261,11 +345,11 @@ public class Client2b extends AbstractClient {
 //			nextseqnum = (nextseqnum+1) % 65535; // increment next available sequence no
 //			pktsBuffer.add(sendPacket); // add sent packet to packets buffer
 //			timers.add(System.nanoTime()); //schedule a timer
-//			
+//
 //			bw.write("sendPacket(): sent packet. seqNoInt : "+seqNoInt+"   |   base : "+base+"   |   nextseqnum : "+nextseqnum+"    |   pktsBuffer.Size() : "+pktsBuffer.size()+"\n");
 //		}
 //	}
-//	
+//
 //	boolean doneACK = false;
 //	public void ackPacket() throws IOException { // receives any packet
 //		rcvPacket.setLength(2);
@@ -273,7 +357,7 @@ public class Client2b extends AbstractClient {
 //		clientSocket.setSoTimeout(0);
 //		bw.write("ackPacket(): clientSocket.getPort() : "+clientSocket.getPort()+"   |   clientSocket.getInetAddress(): "+clientSocket.getInetAddress()+"\n");
 //		synchronized(lock) { // TODO: create a listener!!
-//			// resend neceessary packets?! 
+//			// resend neceessary packets?!
 //			Long currTime = System.nanoTime();
 //			for (int i = 0; i < pktsBuffer.size(); i++) {
 //				Long duration = currTime - timers.get(i);
@@ -322,7 +406,7 @@ public class Client2b extends AbstractClient {
 //			}
 //		}
 //	}
-//	
+//
 //	public void resendPacket() {
 //		// not implemented
 //	}
