@@ -62,7 +62,8 @@ public abstract class AbstractClient {
 		fis.close();
 	}
 	
-	public void createPacket() {
+	/** creates a packet and updates buffer */
+	public byte[] createPacket() {
 		int packetIdx = 3;
 		int packetSize;
 		byte[] buffer;
@@ -89,6 +90,8 @@ public abstract class AbstractClient {
 			packetIdx++;
 			imgBytesArrIdx++;
 		}
+		
+		return buffer;
 	}
 	
 	public abstract void sendPacket() throws IOException;
