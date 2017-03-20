@@ -131,7 +131,7 @@ public class Client2a extends AbstractClient {
 	@Override
 	public void printOutputs() {
 		System.out.println("================== Part2a: output ==================");
-		System.out.println("No of retransmission = "+noOfRetransmission);
+//		System.out.println("No of retransmission = "+noOfRetransmission);
 		estimatedTimeInNano = endTime - startTime; 
 		estimatedTimeInSec = ((double)estimatedTimeInNano)/1000000000.0; // convert from nano-sec to sec
 		throughput = fileSizeKB/estimatedTimeInSec;
