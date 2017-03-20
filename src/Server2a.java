@@ -30,7 +30,7 @@ public class Server2a extends AbstractServer {
 
 		if (rcvSeqNo != expectedSeqNo) {
 			if (lastInOrderPacket != null) {
-				serverSocket.send(lastInOrderPacket);
+				serverSocket.send(lastInOrderPacket); 
 			}
 //			if (rcvSeqNo < expectedSeqNo) {
 //				ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
@@ -50,6 +50,7 @@ public class Server2a extends AbstractServer {
 		out.write(outBuff); // write into file
 
 		ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+		lastInOrderPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 		// System.out.println("send ack packet: received : "+rcvSeqNo);
 		serverSocket.send(ackPacket); // send ACK to client
 		expectedSeqNo = (expectedSeqNo+1) % 65535; // update expected sequence no by incrementing it
