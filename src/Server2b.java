@@ -2,6 +2,7 @@
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 
 /* Dummynet configuration
@@ -109,6 +110,43 @@ public class Server2b extends AbstractServer {
 					if (currPacketBuff[2] == (byte) 1) { // last packet has been written
 //						System.out.println("Wrote last packet! I am so done.");
 						doneACK = true;
+						
+						// in the case of all packets have been ack'ed in the receiver, but not sender.. 
+//						The receiver shouldn't be terminated until those unACKed packets at the sender are acknowledged. 
+//						Otherwise, the sender will continue to send those unACKed packets while there is no receiver. 
+//						One way to handle this issue is that the receiver should have some grace period to allow the sender 
+//						to send unACKed packets. The grace period should be renewed every time a new packet arrives at the receiver.
+//						 
+//						Your receiver stays alive for a while (i.e., some grace time period) after it receives the last packet. 
+//						For instance, your receiver waits for one second after the last packet was received. Within that time, 
+//						if some packet arrives, the receiver takes an appropriate action depending on the context (e.g., sending ACK) 
+//						and waits for another second. If there are no arriving packets for say 3 seconds in a row, then terminates 
+//						the receiver. Then, the problem will not arise any more. Here one assumption is that the RTT is much smaller 
+//						than 1 sec, which holds true according to the part 2b specification.
+						boolean canTerminate = false;
+						int attempts = 0;
+						while (!canTerminate) { // can only terminate if no more packets are arriving
+							receivePacket = new DatagramPacket(buffer, buffer.length);
+							receivePacket.setLength(1027);
+							serverSocket.setSoTimeout(1000); // wait for one second
+							try {
+								serverSocket.receive(receivePacket);
+								attempts = 0;
+								clientPortNo = receivePacket.getPort();
+								clientIPAddress = receivePacket.getAddress();
+								rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
+								ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
+								ackBuffer[1] = buffer[1];
+								ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+								serverSocket.send(ackPacket); // resend ack packet! 
+							} catch (SocketTimeoutException e) {
+								if (attempts >= 3) { // maximum wait is 3 sec, if no packets are arriving, terminate the program
+									canTerminate = true;
+								}
+								attempts++;
+							}
+						}
+						
 						closeAll();
 						return;
 					}
