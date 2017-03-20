@@ -15,7 +15,8 @@ ipfw pipe 200 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
 public class Server2a extends AbstractServer {
 
 	int expectedSeqNo = 0; // expectedSeqNo = base number for the receiver window
-
+	DatagramPacket lastInOrderPacket = null;
+	
 	public Server2a(int portNo, String filename) throws IOException {
 		super(portNo, filename);
 	}
@@ -28,10 +29,13 @@ public class Server2a extends AbstractServer {
 		// System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
 
 		if (rcvSeqNo != expectedSeqNo) {
-			if (rcvSeqNo < expectedSeqNo) {
-				ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
-				serverSocket.send(ackPacket); // send ACK to client
+			if (lastInOrderPacket != null) {
+				serverSocket.send(lastInOrderPacket);
 			}
+//			if (rcvSeqNo < expectedSeqNo) {
+//				ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+//				serverSocket.send(ackPacket); // send ACK to client
+//			}
 			return;
 		}
 
@@ -68,6 +72,7 @@ public class Server2a extends AbstractServer {
 					ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 					ackBuffer[1] = buffer[1];
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+					lastInOrderPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 					serverSocket.send(ackPacket); // resend ack packet!
 				} catch (SocketTimeoutException e) {
 					if (attempts >= 3) { // maximum wait is 3 sec, if no packets are arriving, terminate the program
