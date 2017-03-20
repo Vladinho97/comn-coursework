@@ -1,5 +1,6 @@
 #!/bin/sh
 # dummynet configurations
+mount -t vboxsf dummynetshared /mnt/shared
 
 ipfw flush
 ipfw add pipe 100 in
