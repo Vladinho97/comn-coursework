@@ -15,7 +15,7 @@ ipfw pipe 200 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
 public class Server2a extends AbstractServer {
 
 	int expectedSeqNo = 0; // expectedSeqNo = base number for the receiver window
-	
+
 	public Server2a(int portNo, String filename) throws IOException {
 		super(portNo, filename);
 	}
@@ -25,12 +25,17 @@ public class Server2a extends AbstractServer {
 	public void ackPacket() throws IOException {
 		receivePacket();
 
-//		System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
+		// System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
 
-		if (rcvSeqNo != expectedSeqNo) 
+		if (rcvSeqNo != expectedSeqNo) {
+			if (rcvSeqNo < expectedSeqNo) {
+				ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+				serverSocket.send(ackPacket); // send ACK to client
+			}
 			return;
-		
-		// received packet is the right packet, update variables 
+		}
+
+		// received packet is the right packet, update variables
 //		System.out.print("rcvSeqNo == expectedSeqNo!\n");
 		byte[] outBuff = new byte[packetSize-3]; // to extract image file byte values
 		int outIdx = 0; // index pointer for currBuff
@@ -41,14 +46,13 @@ public class Server2a extends AbstractServer {
 		out.write(outBuff); // write into file
 
 		ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
-//			System.out.println("send ack packet: received : "+rcvSeqNo);
+		// System.out.println("send ack packet: received : "+rcvSeqNo);
 		serverSocket.send(ackPacket); // send ACK to client
 		expectedSeqNo = (expectedSeqNo+1) % 65535; // update expected sequence no by incrementing it
-		
+
 		if (endFlag == ((byte) 1)) { // terminates if last packet
-			doneACK = true;
-			
-			// in the case that client hasnt received all ack's 
+
+			// in the case that client hasnt received all ack's
 			boolean canTerminate = false;
 			int attempts = 0;
 			while (!canTerminate) { // can only terminate if no more packets are arriving
@@ -64,7 +68,7 @@ public class Server2a extends AbstractServer {
 					ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 					ackBuffer[1] = buffer[1];
 					ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
-					serverSocket.send(ackPacket); // resend ack packet! 
+					serverSocket.send(ackPacket); // resend ack packet!
 				} catch (SocketTimeoutException e) {
 					if (attempts >= 3) { // maximum wait is 3 sec, if no packets are arriving, terminate the program
 						canTerminate = true;
@@ -72,11 +76,11 @@ public class Server2a extends AbstractServer {
 					attempts++;
 				}
 			}
-			
+
+			doneACK = true;
 			closeAll();
 			return;
 		}
 	}
 
 }
-

@@ -23,14 +23,14 @@ class ResendTask extends TimerTask {
 		try {
 			client.resendPackets();
 		} catch (IOException e) {
-//			e.printStackTrace();
+			e.printStackTrace();
 		}
 		return;
 	}
 }
 
 public class Client2a extends AbstractClient {
-	
+
 	private Timer timer = new Timer();
 
 	public Client2a(String localhost, int portNo, String filename,
@@ -38,11 +38,12 @@ public class Client2a extends AbstractClient {
 		super(localhost, portNo, filename, retryTimeout, windowSize);
 	}
 
-//	boolean doneSEND = false; 
+//	boolean doneSEND = false;
 	/** Client only sends if there are bytes left in file and there is space in the window */
 	public void sendPacket() throws IOException {
 		if (imgBytesArrIdx >= imgBytesArrLen) {
 			doneSEND = true;
+			// System.out.println("done sending.");
 			return;
 		}
 		if (pktsBuffer.size() >= windowSize) {
@@ -51,12 +52,14 @@ public class Client2a extends AbstractClient {
 		synchronized (lock) {
 			seqNoInt = incre % 65535;
 			incre++;
-			
-			byte[] buffer = createPacket(); // create new packet 
-			
+
+			byte[] buffer = createPacket();
+
 			// ------------------------------ send the packet --------------------------------
 			sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 			clientSocket.send(sendPacket);
+			// System.out.println("Send! seqno = "+seqNoInt);
+
 			// set time for first packet
 			if (isFirstPacket) {
 				startTime = System.nanoTime();
@@ -81,26 +84,27 @@ public class Client2a extends AbstractClient {
 		clientSocket.receive(rcvPacket);
 		ackBuffer = rcvPacket.getData();
 		rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-//			System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
-		
+		// System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
+
 		synchronized (lock) {
-			if (rcvSeqNoInt < base) 
+			if (rcvSeqNoInt < base)
 				return;
-			
+
+			// System.out.println("acking! rcvSeqNoInt = "+rcvSeqNoInt);
 			// -------------- ack packet if received sequence no. is greater than equal to base no.-----------------
 			for (int i = 0; i < (rcvSeqNoInt-base+1); i++) {
 				pktsBuffer.remove(0); // removes packets from buffer
 			}
-			
+
 			base = (rcvSeqNoInt+1) % 65535;
-			
-			if (rcvSeqNoInt == lastSeqNo) { // ack'ed last packet
+
+			if (endFlag == (byte)1 && pktsBuffer.size()==0) { // ack'ed last packet
 				doneACK = true;
 				timer.cancel();
 				closeAll();
 				return;
 			}
-			
+
 			if (base == nextseqnum) { // no more unAck'ed packet
 //			System.out.println("base == nextseqnum, cancel timer");
 				timer.cancel();
@@ -116,7 +120,7 @@ public class Client2a extends AbstractClient {
 	@Override
 	public void resendPackets() throws IOException {
 		synchronized (lock) {
-//			System.out.println("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size());
+			// System.out.println("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size());
 			for (int i = 0; i < pktsBuffer.size(); i++) {
 				clientSocket.send(pktsBuffer.get(i));
 				noOfRetransmission++;
@@ -130,12 +134,12 @@ public class Client2a extends AbstractClient {
 
 	@Override
 	public void printOutputs() {
-		System.out.println("================== Part2a: output ==================");
+		// System.out.println("================== Part2a: output ==================");
 //		System.out.println("No of retransmission = "+noOfRetransmission);
-		estimatedTimeInNano = endTime - startTime; 
+		estimatedTimeInNano = endTime - startTime;
 		estimatedTimeInSec = ((double)estimatedTimeInNano)/1000000000.0; // convert from nano-sec to sec
 		throughput = fileSizeKB/estimatedTimeInSec;
 		System.out.println("Throughput = "+throughput);
-		System.out.println("================== Program terminates ==================");
+		// System.out.println("================== Program terminates ==================");
 	}
 }

@@ -50,7 +50,7 @@ class RcvThread implements Runnable {
 			}
 		}
 		client2a.printOutputs();
-		System.exit(0);
+		// System.exit(0);
 		return;
 	}
 }

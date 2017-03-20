@@ -28,9 +28,9 @@ public abstract class AbstractServer {
 	byte[] ackBuffer = new byte[2];
 	DatagramPacket ackPacket;
 	int rcvSeqNo;
-	
+
 	boolean doneACK = false; // terminates if doneACK = true
-	
+
 	public AbstractServer(int portNo, String filename) throws IOException {
 		this.portNo = portNo;
 		this.filename = filename;
