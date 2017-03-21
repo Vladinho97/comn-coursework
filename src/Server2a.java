@@ -14,7 +14,7 @@ ipfw pipe 200 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
 
 public class Server2a extends AbstractServer {
 
-	int expectedSeqNo = 0; // expectedSeqNo = base number for the receiver window
+	int expectedSeqNo = 1; // expectedSeqNo = base number for the receiver window
 	DatagramPacket lastInOrderPacket = null; // last ack'd packet
 	byte[] lastInOrderAckBuffer = new byte[2]; // array to store a copy of the sequence no
 

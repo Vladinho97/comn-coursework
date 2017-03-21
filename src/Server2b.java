@@ -14,7 +14,7 @@ ipfw pipe 200 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
 */
 
 public class Server2b extends AbstractServer {
-	int windowSize, rcvBase = 0;
+	int windowSize, rcvBase = 1;
 	ArrayList<byte[]> windowBuffer = new ArrayList<byte[]>(); // stores byte array from received packet
 
 	public Server2b(int portNo, String filename, int windowSize) throws IOException {

@@ -27,7 +27,7 @@ public abstract class AbstractClient {
 	InetAddress IPAddress; // server's IP address
 
 	// ================== variables related to sequence no. ===============
-	int incre = 0, seqNoInt = 0, base = 0, nextseqnum = 0;
+	int incre = 1, seqNoInt = 0, base = 1, nextseqnum = 1;
 	ArrayList<DatagramPacket> pktsBuffer = new ArrayList<DatagramPacket>(); // window
 	byte endFlag = (byte) 0; // last packet flag
 
