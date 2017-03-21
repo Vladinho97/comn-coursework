@@ -10,8 +10,9 @@ import java.util.ArrayList;
 
 public abstract class AbstractClient {
 
-	Object lock = new Object();
+	Object lock = new Object(); // for synchronization
 
+	// ======================== Sender arguments ==========================
 	String localhost, filename;
 	int portNo, retryTimeout, windowSize;
 
@@ -22,13 +23,13 @@ public abstract class AbstractClient {
 	// ================== variables related to client socket ==============
 	DatagramSocket clientSocket = new DatagramSocket();
 	DatagramPacket sendPacket;
-	InetAddress IPAddress;
+	InetAddress IPAddress; // server's IP address
 
 	// ================== variables related to sequence no. ===============
 	int incre = 0, seqNoInt = 0, base = 0, nextseqnum = 0;
 	ArrayList<DatagramPacket> pktsBuffer = new ArrayList<DatagramPacket>(); // window
 	byte endFlag = (byte) 0; // last packet flag
-	int attempt = 0; // no. of attempts to send the last packet TODO: do i need this?
+	int attempt = 0; // no. of attempts to send the last packet
 
 	// ================== variables related to receiving packets ============
 	byte[] ackBuffer = new byte[2]; // ACK value from rcvPacket stored here
