@@ -20,7 +20,7 @@ public class Client2b extends AbstractClient {
 
 	public Client2b(String localhost, int portNo, String filename, int retryTimeout, int windowSize) throws IOException {
 		super(localhost, portNo, filename, retryTimeout, windowSize);
-		for (int i = 0; i < windowSize; i++) {
+		for (int i = 0; i < windowSize; i++) { // initialise timers and packets buffers
 			pktsBuffer.add(null);
 			timersBuffer.add(null);
 		}
@@ -41,8 +41,8 @@ public class Client2b extends AbstractClient {
 	}
 	
 	/** Checks whether a timer has timed out */
-	public boolean isTimeout(long timer) {
-		if (System.nanoTime()-timer >= retryTimeout) 
+	public boolean isTimeout(long timerValue) {
+		if (System.nanoTime()-timerValue >= retryTimeout) 
 			return true;
 		return false;
 	}
@@ -63,7 +63,6 @@ public class Client2b extends AbstractClient {
 		System.out.println();
 	}
 
-//	boolean doneSEND = false;
 	@Override
 	public void sendPacket() throws IOException {
 		// System.out.println("sendPacket(): nextseqnum = "+nextseqnum);
@@ -80,6 +79,7 @@ public class Client2b extends AbstractClient {
 			incre++;
 			
 			byte[] buffer = createPacket(); // create new packet 
+			
 			// ------------------------------ send the packet --------------------------------
 			sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 			clientSocket.send(sendPacket);
@@ -98,16 +98,11 @@ public class Client2b extends AbstractClient {
 		}
 	}
 	
-//	boolean doneACK = false;
 	@Override
 	public void ackPacket() throws IOException {
-		rcvPacket.setLength(2);
-		clientSocket.setSoTimeout(0);
-		clientSocket.receive(rcvPacket);
-		ackBuffer = rcvPacket.getData();
-		rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-//		System.out.println("received a packet! base = "+base+"   |   base+N-1 = "+(base+windowSize-1)+"   |   nextSeqNoInt = "+nextseqnum+"   |   rcvSeqNoInt = "+rcvSeqNoInt);
-
+		
+		receivePacket(); // updates rcvSeqNo and ackBuffer
+		
 		synchronized (lock) {
 			if (!isWithinSent(rcvSeqNoInt)) {
 //				System.out.println("received packet not within sent?");
@@ -136,7 +131,7 @@ public class Client2b extends AbstractClient {
 //						System.out.println("base == nextseqnum: base = "+base+"   |   nextseqnum = "+nextseqnum);
 						break;
 					}
-					if (endFlag == (byte)1 && base == lastSeqNo) { // TODO: check whether both conditions are needed????
+					if (endFlag == (byte)1 && base == lastSeqNo) {
 						doneACK = true;
 						closeAll(); // updates end time
 						return;
@@ -162,7 +157,6 @@ public class Client2b extends AbstractClient {
 		synchronized (lock) {
 			for (int i = 0; i < timersBuffer.size(); i++) {
 				if (timersBuffer.get(i) != (Long) null && isTimeout(timersBuffer.get(i))) {
-//				if (timersBuffer.get(i) != (Long) null && System.nanoTime()-timersBuffer.get(i) >= retryTimeout) {
 					clientSocket.send(pktsBuffer.get(i));
 					timersBuffer.set(i, System.nanoTime());
 				}
@@ -172,12 +166,10 @@ public class Client2b extends AbstractClient {
 		
 	@Override
 	public void printOutputs() {
-		System.out.println("================== Part2b: output ==================");
-//		System.out.println("No of retransmission = "+noOfRetransmission);
 		estimatedTimeInNano = endTime - startTime; 
 		estimatedTimeInSec = ((double)estimatedTimeInNano)/1000000000.0; // convert from nano-sec to sec
 		throughput = fileSizeKB/estimatedTimeInSec;
-		System.out.println("Throughput = "+throughput);
-		System.out.println("================== Program terminates ==================");
+		System.out.println("Part2b output: Throughput = "+throughput);
+		System.out.println("------------------ Program Terminates ------------------");
 	}
 }

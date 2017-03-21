@@ -23,7 +23,7 @@ class ResendTask extends TimerTask {
 		try {
 			client.resendPackets();
 		} catch (IOException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		return;
 	}
@@ -38,12 +38,18 @@ public class Client2a extends AbstractClient {
 		super(localhost, portNo, filename, retryTimeout, windowSize);
 	}
 
-//	boolean doneSEND = false;
-	/** Client only sends if there are bytes left in file and there is space in the window */
+	/** reschedule client's timer */
+	public void rescheduleTimer() {
+		timer.cancel();
+		timer = new Timer();
+		timer.schedule(new ResendTask(this), retryTimeout);
+	}
+	
+	@Override
 	public void sendPacket() throws IOException {
+		// Client only sends if there are bytes left in file and there is space in the window
 		if (imgBytesArrIdx >= imgBytesArrLen) {
 			doneSEND = true;
-			// System.out.println("done sending.");
 			return;
 		}
 		if (pktsBuffer.size() >= windowSize) {
@@ -67,30 +73,24 @@ public class Client2a extends AbstractClient {
 			}
 			// ------------------------------ update values --------------------------------
 			if (base == nextseqnum) { // if no unAck'd packets
-				timer.cancel();
-				timer = new Timer();
-				timer.schedule(new ResendTask(this), retryTimeout);
+				rescheduleTimer();
 			}
 			nextseqnum = (nextseqnum+1) % 65535; // increment next available sequence no
 			pktsBuffer.add(sendPacket); // add sent packet to packets buffer
 		}
 	}
 
-//	boolean doneACK = false;
-	/** Tries to receive a packet (with sequence no = base) and ack it. */
+	@Override
 	public void ackPacket() throws IOException {
-		rcvPacket.setLength(2);
-		clientSocket.setSoTimeout(0);
-		clientSocket.receive(rcvPacket);
-		ackBuffer = rcvPacket.getData();
-		rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-		// System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
-
+		// Tries to receive a packet (with sequence no = base) and ack it.
+		
+		receivePacket(); // updates rcvSeqNo and ackBuffer
+		
 		synchronized (lock) {
 			if (rcvSeqNoInt < base)
 				return;
-
 			// System.out.println("acking! rcvSeqNoInt = "+rcvSeqNoInt);
+			
 			// -------------- ack packet if received sequence no. is greater than equal to base no.-----------------
 			for (int i = 0; i < (rcvSeqNoInt-base+1); i++) {
 				pktsBuffer.remove(0); // removes packets from buffer
@@ -98,10 +98,10 @@ public class Client2a extends AbstractClient {
 
 			base = (rcvSeqNoInt+1) % 65535;
 
-			if (endFlag == (byte)1 && pktsBuffer.size()==0) { // ack'ed last packet
+			if (endFlag == (byte)1 && pktsBuffer.size()==0 && rcvSeqNoInt == lastSeqNo) { // ack'ed last packet
 				doneACK = true;
 				timer.cancel();
-				closeAll();
+				closeAll(); // updates end time
 				return;
 			}
 
@@ -109,37 +109,30 @@ public class Client2a extends AbstractClient {
 //			System.out.println("base == nextseqnum, cancel timer");
 				timer.cancel();
 			} else {
-				timer.cancel();
-				timer = new Timer();
-				timer.schedule(new ResendTask(this), retryTimeout);
-//			System.out.println("base != nextseqnum. Schedule new timer");
+				rescheduleTimer();
+//				System.out.println("base != nextseqnum. Schedule new timer");
 			}
 		}
 	}
-
+	
 	@Override
 	public void resendPackets() throws IOException {
 		synchronized (lock) {
 			// System.out.println("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size());
 			for (int i = 0; i < pktsBuffer.size(); i++) {
 				clientSocket.send(pktsBuffer.get(i));
-				noOfRetransmission++;
 			}
-			timer.cancel();
-			timer = new Timer();
-			timer.schedule(new ResendTask(this), retryTimeout);
+			rescheduleTimer();
 //			System.out.println("scheduled timer");
 		}
 	}
 
 	@Override
 	public void printOutputs() {
-		// System.out.println("================== Part2a: output ==================");
-//		System.out.println("No of retransmission = "+noOfRetransmission);
 		estimatedTimeInNano = endTime - startTime;
 		estimatedTimeInSec = ((double)estimatedTimeInNano)/1000000000.0; // convert from nano-sec to sec
 		throughput = fileSizeKB/estimatedTimeInSec;
-		System.out.println("Throughput = "+throughput);
-		// System.out.println("================== Program terminates ==================");
+		System.out.println("Part2a output: Throughput = "+throughput);
+		System.out.println("------------------ Program Terminates ------------------");
 	}
 }

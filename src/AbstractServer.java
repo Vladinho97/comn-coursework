@@ -9,9 +9,13 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 
 public abstract class AbstractServer {
-
+	
+	boolean doneACK = false; // terminates if doneACK = true
+	
+	// =========== Server parameters =========
 	int portNo;
 	String filename;
 
@@ -22,14 +26,12 @@ public abstract class AbstractServer {
 	int packetSize, clientPortNo;
 	byte endFlag = (byte) 0; // for last packet
 	InetAddress clientIPAddress;
-	OutputStream out;
+	OutputStream out; // to write image file
 
 	// =========== for sending ack's =============
-	byte[] ackBuffer = new byte[2];
+	byte[] ackBuffer = new byte[2]; // two bytes containing the seq no.
 	DatagramPacket ackPacket;
-	int rcvSeqNo;
-
-	boolean doneACK = false; // terminates if doneACK = true
+	int rcvSeqNo; // received sequence no. from client
 
 	public AbstractServer(int portNo, String filename) throws IOException {
 		this.portNo = portNo;
@@ -60,6 +62,34 @@ public abstract class AbstractServer {
 
 	public abstract void ackPacket() throws IOException;
 
+	/** Only terminates if not more packets are arriving from client */
+	public void waitBeforeTerminate() throws IOException {
+		boolean canTerminate = false;
+		int attempts = 0;
+		while (!canTerminate) { // can only terminate if no more packets are arriving
+//			System.out.println("cant terminate");
+			receivePacket = new DatagramPacket(buffer, buffer.length);
+			receivePacket.setLength(1027);
+			serverSocket.setSoTimeout(1000); // wait for one second
+			try {
+				serverSocket.receive(receivePacket);
+				attempts = 0;
+				clientPortNo = receivePacket.getPort();
+				clientIPAddress = receivePacket.getAddress();
+				rcvSeqNo = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
+				ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
+				ackBuffer[1] = buffer[1];
+				ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
+				serverSocket.send(ackPacket); // resend ack packet!
+			} catch (SocketTimeoutException e) {
+				if (attempts >= 3) { // maximum wait is 3 consecutive sec, if no packets are arriving, terminate the program
+					canTerminate = true;
+				}
+				attempts++;
+			}
+		}
+	}
+	
 	public void closeAll() throws IOException {
 		out.close();
 		serverSocket.close();

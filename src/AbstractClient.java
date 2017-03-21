@@ -11,8 +11,9 @@ import java.util.ArrayList;
 public abstract class AbstractClient {
 
 	Object lock = new Object(); // for synchronization
+	boolean doneSEND = false, doneACK = false; // flags to terminate sending and acking
 
-	// ======================== Sender arguments ==========================
+	// ======================== Sender parameters ==========================
 	String localhost, filename;
 	int portNo, retryTimeout, windowSize;
 
@@ -29,19 +30,16 @@ public abstract class AbstractClient {
 	int incre = 0, seqNoInt = 0, base = 0, nextseqnum = 0;
 	ArrayList<DatagramPacket> pktsBuffer = new ArrayList<DatagramPacket>(); // window
 	byte endFlag = (byte) 0; // last packet flag
-	int attempt = 0; // no. of attempts to send the last packet
 
 	// ================== variables related to receiving packets ============
 	byte[] ackBuffer = new byte[2]; // ACK value from rcvPacket stored here
 	DatagramPacket rcvPacket = new DatagramPacket(ackBuffer, ackBuffer.length);
 	int lastSeqNo, rcvSeqNoInt; // received seqno in interger
 
-	boolean doneSEND = false, doneACK = false; // flags to terminate sending and acking
-
 	// ========================= Program outputs ==========================
 	double fileSizeKB, throughput, estimatedTimeInSec;
 	long estimatedTimeInNano;
-	int noOfRetransmission = 0;
+//	int noOfRetransmission = 0;
 	boolean isFirstPacket = true;
 	Long startTime = null, endTime = null;
 
@@ -98,7 +96,17 @@ public abstract class AbstractClient {
 	}
 
 	public abstract void sendPacket() throws IOException;
-
+	
+	/** Client socket receives a packet and updates ackBuffer and rcvSeqNoInt */
+	public void receivePacket() throws IOException {
+		rcvPacket.setLength(2);
+		clientSocket.setSoTimeout(0);
+		clientSocket.receive(rcvPacket);
+		ackBuffer = rcvPacket.getData();
+		rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
+		// System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
+	}
+	
 	public abstract void ackPacket() throws IOException;
 
 	public abstract void resendPackets() throws IOException;

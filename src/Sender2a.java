@@ -14,7 +14,7 @@ public class Sender2a {
 
 	public static void main(String[] args) throws IOException {
 
-		// ================ Read arguments ===============
+		// ------------------------- Read arguments -------------------------
 		if (args.length != 5) { // ignoring WindowSize parameter, exit code 1 if missing arguments
 			System.err.println("Usage: java Sender1a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
 			System.exit(1);
@@ -28,8 +28,11 @@ public class Sender2a {
 		Client2a client2a = new Client2a(localhost, portNo, filename, retryTimeout, windowSize);
 		client2a.openFile(); // opens image file
 
+		// ------------------------ creates threads ------------------------------
 		Thread rcvtt = new Thread(new RcvThread(client2a));
 		Thread sendtt = new Thread(new SendThread(client2a));
+		
+		// --------------------------- run threads --------------------------------
 		rcvtt.start();
 		sendtt.start();
 	}
@@ -46,7 +49,7 @@ class RcvThread implements Runnable {
 			try {
 				client2a.ackPacket();
 			} catch (IOException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 		client2a.printOutputs();
@@ -66,7 +69,7 @@ class SendThread implements Runnable {
 			try {
 				client2a.sendPacket();
 			} catch (IOException e) {
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 		return;
