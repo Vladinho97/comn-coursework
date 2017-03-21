@@ -169,7 +169,8 @@ public class Client2b extends AbstractClient {
 		estimatedTimeInNano = endTime - startTime; 
 		estimatedTimeInSec = ((double)estimatedTimeInNano)/1000000000.0; // convert from nano-sec to sec
 		throughput = fileSizeKB/estimatedTimeInSec;
-		System.out.println("Part2b output: Throughput = "+throughput);
+		System.out.println("--------------------- Part2b output --------------------");
+		System.out.println("Throughput = "+throughput);
 		System.out.println("------------------ Program Terminates ------------------");
 	}
 }
