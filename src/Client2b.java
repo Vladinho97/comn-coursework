@@ -16,23 +16,22 @@ ipfw pipe 200 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
 */
 
 class ResendTask2b extends TimerTask {
-	private Timer timer;
-	private Client2b client2b;
-	private DatagramPacket sendPacket;
-	public ResendTask2b(Timer timer, Client2b client2b, DatagramPacket sendPacket) {
-		this.timer = timer;
+	Client2b client2b;
+	DatagramPacket sendPacket;
+	Timer timer;
+	public ResendTask2b(Client2b client2b, DatagramPacket sendPacket, Timer timer) {
 		this.client2b = client2b;
 		this.sendPacket = sendPacket;
+		this.timer = timer;
 	}
 	@Override
 	public void run() {
 		try {
-			client2b.clientSocket.send(sendPacket);
-			timer.cancel();
-			timer = new Timer();
-			timer.schedule(new ResendTask2b(timer, client2b, sendPacket), client2b.retryTimeout);
+			System.out.println("calling resend task 2b!!!");
+			client2b.resendCurrPkt(sendPacket, timer);
 		} catch (IOException e) {
-			
+			// TODO Auto-generated catch block
+//			e.printStackTrace();
 		}
 		return;
 	}
@@ -64,13 +63,6 @@ public class Client2b extends AbstractClient {
 		return false;
 	}
 	
-//	/** Checks whether a timer has timed out */
-//	public boolean isTimeout(long timerValue) {
-//		if (System.nanoTime()-timerValue >= retryTimeout) 
-//			return true;
-//		return false;
-//	}
-	
 	/** Prints current pktsbuffer for checking purposes */
 	public void printPktsBuffer() {
 		System.out.println("current pktsBuffer: ");
@@ -87,6 +79,14 @@ public class Client2b extends AbstractClient {
 		System.out.println();
 	}
 
+	public void resendCurrPkt(DatagramPacket sendPacket, Timer timer) throws IOException {
+		System.out.println("------- resend a packet! ---------");
+		clientSocket.send(sendPacket);
+		timer.cancel();
+		timer = new Timer();
+		timer.schedule(new ResendTask2b(this, sendPacket, timer), retryTimeout);
+	}
+	
 	@Override
 	public void sendPacket() throws IOException {
 		if (imgBytesArrIdx >= imgBytesArrLen) {
@@ -105,8 +105,8 @@ public class Client2b extends AbstractClient {
 			// ------------------------------ send the packet --------------------------------
 			sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 			clientSocket.send(sendPacket);
-			Timer currTimer = new Timer();
-			currTimer.schedule(new ResendTask2b(this, sendPacket), retryTimeout);
+			Timer timer = new Timer();
+			timer.schedule(new ResendTask2b(this, sendPacket, timer), retryTimeout);
 			long sendPacketTime = System.nanoTime();
 			
 			if (isFirstPacket) { // is this first packet?
@@ -117,7 +117,7 @@ public class Client2b extends AbstractClient {
 			// ------------------------------ update values --------------------------------
 			nextseqnum = (nextseqnum+1) % 65535; // increment next available sequence no
 			pktsBuffer.set(seqNoInt-base, sendPacket); // add sent packet to packets buffer
-			timersBuffer.set(seqNoInt-base, currTimer);
+			timersBuffer.set(seqNoInt-base, timer);
 			// printPktsBuffer();
 		}
 	}
@@ -171,14 +171,7 @@ public class Client2b extends AbstractClient {
 
 	@Override
 	public void resendPackets() throws IOException {
-//		synchronized (lock) {
-//			for (int i = 0; i < timersBuffer.size(); i++) {
-//				if (timersBuffer.get(i) != (Long) null && isTimeout(timersBuffer.get(i))) {
-//					clientSocket.send(pktsBuffer.get(i));
-//					timersBuffer.set(i, System.nanoTime());
-//				}
-//			}
-//		}
+		
 	}
 		
 	@Override
