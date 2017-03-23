@@ -65,7 +65,6 @@ public class Client2b extends AbstractClient {
 
 	@Override
 	public void sendPacket() throws IOException {
-		// System.out.println("sendPacket(): nextseqnum = "+nextseqnum);
 		if (imgBytesArrIdx >= imgBytesArrLen) {
 			doneSEND = true;
 			return;
@@ -74,7 +73,6 @@ public class Client2b extends AbstractClient {
 			return;
 		}
 		synchronized (lock) {
-//			System.out.println("sendPacket(): base = "+base+"   |   base+N-1 = "+(base+windowSize-1)+"   |   nextseqnum = "+nextseqnum);
 			seqNoInt = incre % 65535;
 			incre++;
 			
@@ -105,12 +103,10 @@ public class Client2b extends AbstractClient {
 		
 		synchronized (lock) {
 			if (!isWithinSent(rcvSeqNoInt)) {
-//				System.out.println("received packet not within sent?");
 				return;
 			}
 
 			if (pktsBuffer.get(rcvSeqNoInt-base) != null) { // packet not yet been ack
-//				System.out.println("this packet has not been ack. Now ack it");
 				pktsBuffer.set(rcvSeqNoInt-base, null);
 				timersBuffer.set(rcvSeqNoInt-base, null);
 			}
@@ -119,16 +115,13 @@ public class Client2b extends AbstractClient {
 			// ---------------------------------- move sliding window --------------------------------
 			if (pktsBuffer.get(0) == null) { // move sliding window
 				int endingIdx = 0; // endingIdx is the index for the pktsBuffer containing a packet that has not been ack'd
-//				System.out.println("base is now null. base = "+base);
 				for (int i = 0; i < pktsBuffer.size(); i++) {
 					if (pktsBuffer.get(i) != null) {
 						endingIdx = i;
-//						System.out.println("pktsBuffer.get("+i+") != null. endingIdx = "+i);
 						break;
 					}
 					if (base == nextseqnum) {
 						endingIdx = i;
-//						System.out.println("base == nextseqnum: base = "+base+"   |   nextseqnum = "+nextseqnum);
 						break;
 					}
 					if (endFlag == (byte)1 && base == lastSeqNo) {
@@ -137,16 +130,13 @@ public class Client2b extends AbstractClient {
 						return;
 					}
 					base = (base+1) % 65535;
-//					System.out.println("incremented base = "+base);
 				}
-//				System.out.println("slide the window! endingIdx = "+endingIdx);
 				for (int i = 0; i < endingIdx; i++) { // slide the window
 					pktsBuffer.remove(0);
 					pktsBuffer.add(null);
 					timersBuffer.remove(0);
 					timersBuffer.add(null);
 				}
-//				System.out.println("window slided! base = "+base+"   |   base+N-1 = "+(base+windowSize-1)+"   |   nextSeqNoInt = "+nextseqnum+"   |   rcvSeqNoInt = "+rcvSeqNoInt);
 			}
 //			printPktsBuffer();
 		}

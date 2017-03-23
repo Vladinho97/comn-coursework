@@ -16,7 +16,7 @@ public class Sender2a {
 
 		// ------------------------- Read arguments -------------------------
 		if (args.length != 5) { // ignoring WindowSize parameter, exit code 1 if missing arguments
-			System.err.println("Usage: java Sender1a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
+			System.err.println("Usage: java Sender2a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
 			System.exit(1);
 		}
 		String localhost = args[0];
@@ -53,7 +53,6 @@ class RcvThread implements Runnable {
 			}
 		}
 		client2a.printOutputs();
-		// System.exit(0);
 		return;
 	}
 }

@@ -59,27 +59,21 @@ public class Server2b extends AbstractServer {
 
 		receivePacket(); // updates rcvSeqNo and ackBuffer (which will be the rcvSeqNo no matter what)
 
-		// System.out.println("rcvBase = "+rcvBase+"   |   rcvBase+windowSize-1 = "+(rcvBase+windowSize-1)+"   |   rcvSeqNo = "+rcvSeqNo);
-
 		if (isBelowWindow(rcvSeqNo)) { // ack must be generated, although this is a packet that the receiver has previously ack'd
-			// System.out.println("is below window, resend ack!");
 			ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 			serverSocket.send(ackPacket);
 			return;
 		}
 
 		if (isWithinWindow(rcvSeqNo)) { // correctly received
-			// System.out.println("Is within window, send ackPacket for rcvSeqNo = "+rcvSeqNo);
 			ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
 			serverSocket.send(ackPacket);
 
 			// add packet to windowBuffer if not already exists
 			int windowBufferIdx = rcvSeqNo - rcvBase; // index in windowBuffer to store the received packet's data
 			if (windowBuffer.get(windowBufferIdx) == null) { // if this packet was not previously received
-				// System.out.println("ackPacket is new, add to windowBuffer at idx = "+windowBufferIdx);
 				byte[] currByteArr = receivePacket.getData();
 				int currByteArrLen = receivePacket.getLength();
-//				System.out.println("currByteArrLen = "+currByteArrLen);
 				byte[] newCurrByteArr = new byte[currByteArrLen]; // create a copy of it
 				for (int i = 0; i < currByteArrLen; i++) {
 					newCurrByteArr[i] = currByteArr[i];
@@ -90,23 +84,11 @@ public class Server2b extends AbstractServer {
 
 			// ----------------------- write packets to file ------------------
 			if (rcvSeqNo == rcvBase) {
-			// if (windowBuffer.get(0) != null) { // i.e. rcvSeqNo == rcvBase
-				// System.out.println("rcvBase is not null. write packets to file");
-				int endingIdx = 0;
-				for (int i = 0; i < windowSize; i++) {
-					if (windowBuffer.get(i) == null) {
-						endingIdx = i;
-						// System.out.println("packet in idx = "+i+" is null. Stop writing packets");
-						break;
-					}
-					if (i == (windowSize-1))
-						endingIdx = windowSize;
-
+				while (windowBuffer.get(0) != null) {
 					// write datagram packet bytes to image file
-					byte[] currPacketBuff = windowBuffer.get(i);
+					byte[] currPacketBuff = windowBuffer.get(0);
 					endFlag = currPacketBuff[2];
 					byte[] outBuff = new byte[currPacketBuff.length-3]; // output buffer
-//					int wroteSeqNo = (((currPacketBuff[0] & 0xff) << 8) | (currPacketBuff[1] & 0xff)); // received packet's sequence no.
 
 					int outIdx = 0;
 					for (int j = 3; j < currPacketBuff.length; j++) {
@@ -114,23 +96,19 @@ public class Server2b extends AbstractServer {
 						outIdx++;
 					}
 					out.write(outBuff);
-					
+
 					if (endFlag == (byte) 1) { // last packet has been written
 						waitBeforeTerminate(); // waits for a grace period
 						doneACK = true;
 						closeAll();
 						return;
-					}
+					}	
 					rcvBase = (rcvBase+1)%65535;
-					// printCurrWindow();
-				}
-
-				for (int j = 0; j < endingIdx; j++) { // remove packets
 					windowBuffer.remove(0);
 					windowBuffer.add(null);
-					// printCurrWindow();
 				}
 			}
+			
 			return;
 		}
 

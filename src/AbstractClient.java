@@ -104,7 +104,6 @@ public abstract class AbstractClient {
 		clientSocket.receive(rcvPacket);
 		ackBuffer = rcvPacket.getData();
 		rcvSeqNoInt = (((ackBuffer[0] & 0xff) << 8) | (ackBuffer[1] & 0xff));
-		// System.out.println("base : "+base+"   |   received : "+rcvSeqNoInt+"   |   nextseqnum : "+nextseqnum);
 	}
 	
 	public abstract void ackPacket() throws IOException;

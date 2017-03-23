@@ -6,7 +6,7 @@ public class Receiver2b {
 	
 	public static void main(String[] args) throws IOException {
 		if (args.length != 3) {
-			System.err.println("Usage: Receiver1a <Port> <Filename> [WindowSize]");
+			System.err.println("Usage: Receiver2b <Port> <Filename> [WindowSize]");
 			System.exit(1);
 		}
 		int portNo = Integer.parseInt(args[0]);

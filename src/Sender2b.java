@@ -9,7 +9,7 @@ public class Sender2b {
 
 		// ------------------------- Read arguments -------------------------
 		if (args.length != 5) { // ignoring WindowSize parameter, exit code 1 if missing arguments
-			System.err.println("Usage: java Sender1a localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
+			System.err.println("Usage: java Sender2b localhost <Port> <Filename> [RetryTimeout] [WindowSize]");
 			System.exit(1);
 		}
 		String localhost = args[0];

@@ -56,7 +56,6 @@ public abstract class AbstractServer {
 		ackBuffer[0] = buffer[0]; // ackBuffer contains the value of the received sequence no.
 		ackBuffer[1] = buffer[1];
 		endFlag = buffer[2];
-		// System.out.println("received rcvSeqNo = "+rcvSeqNo);
 		return;
 	}
 
@@ -67,7 +66,6 @@ public abstract class AbstractServer {
 		boolean canTerminate = false;
 		int attempts = 0;
 		while (!canTerminate) { // can only terminate if no more packets are arriving
-//			System.out.println("cant terminate");
 			receivePacket = new DatagramPacket(buffer, buffer.length);
 			receivePacket.setLength(1027);
 			serverSocket.setSoTimeout(1000); // wait for one second

@@ -27,8 +27,6 @@ public class Server2a extends AbstractServer {
 		
 		receivePacket(); // updates rcvSeqNo and ackBuffer (which will be the rcvSeqNo no matter what)
 
-		// System.out.println("expected: "+expectedSeqNo+"   |   received: "+rcvSeqNo);
-
 		if (rcvSeqNo != expectedSeqNo) {
 			if (lastInOrderPacket != null) {
 				serverSocket.send(lastInOrderPacket);
@@ -40,7 +38,6 @@ public class Server2a extends AbstractServer {
 		}
 
 		// received packet is the right packet, update variables
-//		System.out.print("rcvSeqNo == expectedSeqNo!\n");
 		byte[] outBuff = new byte[packetSize-3]; // to extract image file byte values
 		int outIdx = 0; // index pointer for currBuff
 		for (int i = 3; i < packetSize; i++) { // write received packet's byte values into currBuff
@@ -50,10 +47,9 @@ public class Server2a extends AbstractServer {
 		out.write(outBuff); // write into file
 
 		ackPacket = new DatagramPacket(ackBuffer, ackBuffer.length, clientIPAddress, clientPortNo);
-		lastInOrderAckBuffer[0] = ackBuffer[0];
+		lastInOrderAckBuffer[0] = ackBuffer[0]; // save last in order ack'd packet
 		lastInOrderAckBuffer[1] = ackBuffer[1];
 		lastInOrderPacket = new DatagramPacket(lastInOrderAckBuffer, lastInOrderAckBuffer.length, clientIPAddress, clientPortNo);
-		// System.out.println("send ack packet: received : "+rcvSeqNo);
 		serverSocket.send(ackPacket); // send ACK to client
 		expectedSeqNo = (expectedSeqNo+1) % 65535; // update expected sequence no by incrementing it
 

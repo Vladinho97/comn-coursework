@@ -64,7 +64,6 @@ public class Client2a extends AbstractClient {
 			// ------------------------------ send the packet --------------------------------
 			sendPacket = new DatagramPacket(buffer, buffer.length, IPAddress, portNo);
 			clientSocket.send(sendPacket);
-			// System.out.println("Send! seqno = "+seqNoInt);
 
 			// set time for first packet
 			if (isFirstPacket) {
@@ -89,7 +88,6 @@ public class Client2a extends AbstractClient {
 		synchronized (lock) {
 			if (rcvSeqNoInt < base)
 				return;
-			// System.out.println("acking! rcvSeqNoInt = "+rcvSeqNoInt);
 			
 			// -------------- ack packet if received sequence no. is greater than equal to base no.-----------------
 			for (int i = 0; i < (rcvSeqNoInt-base+1); i++) {
@@ -106,11 +104,9 @@ public class Client2a extends AbstractClient {
 			}
 
 			if (base == nextseqnum) { // no more unAck'ed packet
-//			System.out.println("base == nextseqnum, cancel timer");
 				timer.cancel();
 			} else {
 				rescheduleTimer();
-//				System.out.println("base != nextseqnum. Schedule new timer");
 			}
 		}
 	}
@@ -118,12 +114,10 @@ public class Client2a extends AbstractClient {
 	@Override
 	public void resendPackets() throws IOException {
 		synchronized (lock) {
-			// System.out.println("resendPackets(): base : "+base+"    |   nextseqnum : "+nextseqnum+"   |   seqNoInt : "+seqNoInt+"   |    pktsBuffer.size() : "+pktsBuffer.size());
 			for (int i = 0; i < pktsBuffer.size(); i++) {
 				clientSocket.send(pktsBuffer.get(i));
 			}
 			rescheduleTimer();
-//			System.out.println("scheduled timer");
 		}
 	}
 
