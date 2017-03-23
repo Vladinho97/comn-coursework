@@ -30,9 +30,6 @@ public class Server2a extends AbstractServer {
 		if (rcvSeqNo != expectedSeqNo) {
 			if (lastInOrderPacket != null) {
 				serverSocket.send(lastInOrderPacket);
-				// byte[] check = lastInOrderPacket.getData();
-				// int hihi = (((buffer[0] & 0xff) << 8) | (buffer[1] & 0xff)); // received packet's sequence no.
-				// System.out.println("resend : "+hihi);
 			}
 			return;
 		}
