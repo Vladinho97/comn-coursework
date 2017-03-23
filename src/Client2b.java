@@ -16,9 +16,11 @@ ipfw pipe 200 config delay 5/25/100ms plr 0.005 bw 10Mbits/s
 */
 
 class ResendTask2b extends TimerTask {
+	private Timer timer;
 	private Client2b client2b;
 	private DatagramPacket sendPacket;
-	public ResendTask2b(Client2b client2b, DatagramPacket sendPacket) {
+	public ResendTask2b(Timer timer, Client2b client2b, DatagramPacket sendPacket) {
+		this.timer = timer;
 		this.client2b = client2b;
 		this.sendPacket = sendPacket;
 	}
@@ -26,6 +28,9 @@ class ResendTask2b extends TimerTask {
 	public void run() {
 		try {
 			client2b.clientSocket.send(sendPacket);
+			timer.cancel();
+			timer = new Timer();
+			timer.schedule(new ResendTask2b(timer, client2b, sendPacket), client2b.retryTimeout);
 		} catch (IOException e) {
 			
 		}
